@@ -49,7 +49,7 @@ La especificación funcional completa está en [docs/ESPECIFICACION.md](docs/ESP
 
 > Si ya tienes un dispositivo llamado `mimusica` en Tailscale, el nuevo se llamará `mimusica-1`. Ajusta entonces `PUBLIC_URL` en el compose.
 
-> Puedes parar el contenedor antiguo `mymediaforalexa`: no comparten puertos ni datos.
+> Usa los puertos 8080 (consola) y 8081 (Alexa). Si ya los ocupa otro contenedor, cambia `CONSOLE_PORT` en `.env`.
 
 ## Actualizaciones automáticas
 

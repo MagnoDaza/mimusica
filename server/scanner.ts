@@ -17,7 +17,7 @@ const log = logger('scanner');
 const NATIVE_EXTENSIONS = new Set(['.mp3', '.m4a', '.m4b']);
 const EXTRA_EXTENSIONS = new Set(['.flac', '.wma', '.aif', '.aiff', '.ogg', '.oga', '.opus', '.wav']);
 const IGNORED_DIR_MARKERS = ['#snapshots', '#recycle', '@__thumb', '@recently-snapshot', '@eadir', '.@__thumb', '$recycle.bin'];
-// ID3 frames that some Echo firmwares choke on (observed in the original app).
+// ID3 frames that some Echo firmwares choke on.
 const PROBLEM_ID3_FRAMES = new Set(['TSO2', 'TCMP', 'XRVA', 'TSOC']);
 
 export type Transcode = 'none' | 'recode' | 'repackage';

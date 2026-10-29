@@ -219,7 +219,7 @@ export function registerApi(app: FastifyInstance) {
     run('UPDATE tracks SET audiobook = ? WHERE album_n = (SELECT album_n FROM tracks WHERE album = ? LIMIT 1)', value ? 1 : 0, album);
     return { ok: true };
   });
-  /** "Selección actual": a queue Alexa plays with "pon la selección" (original SPECIAL_THIS). */
+  /** "Selección actual": a queue Alexa plays with "pon la selección". */
   app.post('/api/selection', async (req) => {
     const list = ids(req);
     const q = createQueue('la selección actual', list);

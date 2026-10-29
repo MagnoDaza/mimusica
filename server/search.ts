@@ -1,5 +1,5 @@
 /**
- * Voice request → play queue. Mirrors the original resolution cascade:
+ * Voice request → play queue. Resolution cascade:
  *   learnings → [joined words] → exact words → fuzzy words → [term-as-artist]
  * then selects every track that matches the resolved values exactly.
  */
@@ -99,7 +99,7 @@ function scoreField(qTokens: string[], fieldTokens: Set<string>, mode: Mode): nu
         const s = similarity(q, f);
         if (s > best) best = s;
       }
-      // Lucene's default fuzzy similarity was 0.5; require a bit more for very short words.
+      // Accept up to ~half the letters wrong; stricter for very short words.
       const threshold = q.length <= 3 ? 0.66 : 0.5;
       if (best >= threshold) {
         total += best * 0.9;
@@ -164,13 +164,13 @@ function bestMatch(q: Partial<Record<Field, string>>, mode: Mode, wantAudiobook:
     if (!prev || prev.score < score) hits.set(key, { score, resolved, exact });
   }
   if (!hits.size) return undefined;
-  // Top 10 by score; an exact match to what was said wins (as in the original).
+  // Top 10 by score; an exact match to what was said wins.
   const top = [...hits.values()].sort((a, b) => b.score - a.score).slice(0, 10);
   const pick = top.find((h) => h.exact) ?? top[0];
   return { resolved: pick.resolved, score: pick.exact ? pick.score + 1 : pick.score };
 }
 
-/** The original's 4-step cascade for one combination of criteria. */
+/** The 4-step cascade for one combination of criteria. */
 function cascade(q: Partial<Record<Field, string>>, wantAudiobook: boolean): Resolved | undefined {
   const given = FIELDS.filter((f) => q[f]);
   if (!given.length) return undefined;

@@ -55,7 +55,7 @@ function ordered(queueId: string, shuffle: boolean, audiobook: boolean): QueueIt
 export type Step = 'first' | 'next' | 'previous' | 'current';
 
 /**
- * Navigate a queue. Missing files are skipped (up to 10) and reported, like the original.
+ * Navigate a queue. Missing files are skipped (up to 10) and reported.
  * Returns the item and its track, or undefined at the end of the queue.
  */
 export function navigate(queueId: string, fromPos: number | undefined, step: Step, opts: { loop: boolean; shuffle: boolean }):

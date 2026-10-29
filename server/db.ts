@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS playlist_tracks (
   PRIMARY KEY (playlist_id, position)
 );
 
--- Play queues: what Alexa is walking through (original: in-memory "LibraryPlaylistMediaItems").
+-- Play queues: what Alexa is walking through. Persisted so playback survives restarts.
 CREATE TABLE IF NOT EXISTS queues (
   id          TEXT PRIMARY KEY,
   name        TEXT NOT NULL,

@@ -169,7 +169,7 @@ function resumeDevice(deviceId: string, offsetOverride?: number): Res {
   });
 }
 
-/** "Continúa donde lo dejé" — the original's SPECIAL_LAST. */
+/** "Continúa donde lo dejé": last queue at the last position. */
 function resumeLast(deviceId: string): Res {
   const bm = getBookmark(LAST_BOOKMARK);
   if (bm?.queue_id && getQueue(bm.queue_id)) {
