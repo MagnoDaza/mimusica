@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Search, EyeOff, Eye, RefreshCw, ListPlus, Mic, ChevronLeft, ChevronRight, ArrowUpDown, BookOpen, Play, Music2, X, Wand2,
 } from 'lucide-react';
-import { api, act, useApi, useDebounced, useRoute, navigate, fmtDuration, nf } from '../lib.ts';
+import { api, act, toast, useApi, useDebounced, useRoute, navigate, fmtDuration, nf } from '../lib.ts';
 import { Cover, Drawer, Empty, Modal, PlayFab, Skeleton } from '../ui.tsx';
 import { usePlayer } from '../player.tsx';
 
@@ -11,6 +11,17 @@ type Track = {
   transcode: string; hidden: number; audiobook: number; play_count: number; has_art: number; path: string; track_no: number; disc: number;
 };
 type Page<T> = { total: number; page: number; size: number; rows: T[] };
+
+// Spoken phrases use sample utterances that exist in the interaction model (server/alexa/model.ts).
+function useAlexaPhrase() {
+  const inv = useApi<{ invocationName: string }>('/api/settings').data?.invocationName || 'mi biblioteca';
+  return (cmd: string) => `Alexa, pide a ${inv} ${cmd}`;
+}
+
+function copyPhrase(phrase: string) {
+  navigator.clipboard?.writeText(phrase).catch(() => {});
+  toast(`Dile a Alexa: «${phrase}»`);
+}
 
 const TABS = [
   ['canciones', 'Canciones'], ['albumes', 'Álbumes'], ['artistas', 'Artistas'], ['generos', 'Géneros'], ['audiolibros', 'Audiolibros'],
@@ -104,7 +115,9 @@ function DetailDrawer({ type, value, onClose }: { type: 'album' | 'artist' | 'ge
   const first = rows.find((r) => r.has_art);
   const total = rows.reduce((n, r) => n + r.duration, 0);
   const isBook = rows.length > 0 && rows.every((r) => r.audiobook);
-  const say = type === 'album' ? (isBook ? `lee el libro ${value}` : `pon el álbum ${value}`) : type === 'artist' ? `pon música de ${value}` : `pon música ${value}`;
+  const phrase = useAlexaPhrase();
+  const say = phrase(type === 'album' ? (isBook ? `que lea ${value}` : `que ponga el álbum ${value}`)
+    : type === 'artist' ? `que ponga música de ${value}` : `que ponga música ${value}`);
 
   return (
     <Drawer onClose={onClose}>
@@ -128,7 +141,8 @@ function DetailDrawer({ type, value, onClose }: { type: 'album' | 'artist' | 'ge
           )}
         </div>
         <div className="card pad row" style={{ position: 'relative', marginTop: 16, padding: '10px 14px' }}>
-          <Mic size={16} color="var(--accent)" /><span className="small">Dile a Alexa: <b>«{say}»</b></span>
+          <Mic size={16} color="var(--accent)" /><span className="small grow">Dile a Alexa: <b>«{say}»</b></span>
+          <button className="btn ghost sm" onClick={() => copyPhrase(say)}>Copiar</button>
         </div>
       </div>
       <div style={{ padding: '0 12px 24px' }}>
@@ -152,6 +166,7 @@ export function TrackTable({ query = {}, rowsOverride, compact, defaultSort = 'a
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [addTo, setAddTo] = useState(false);
   const player = usePlayer();
+  const phrase = useAlexaPhrase();
 
   const qs = useMemo(() => {
     const p = new URLSearchParams({ ...query, page: String(page), size: '100', sort, order });
@@ -239,7 +254,15 @@ export function TrackTable({ query = {}, rowsOverride, compact, defaultSort = 'a
                         <Cover id={t.has_art ? t.id : null} name={t.album || t.title} size={96} style={{ width: 34, borderRadius: 7 }} />
                       </button>
                       <div className="col" style={{ gap: 0, minWidth: 0 }}>
-                        <span className="ellipsis" style={{ fontWeight: 550 }}>{compact && t.track_no ? `${t.track_no}. ` : ''}{t.title}</span>
+                        <span className="row" style={{ gap: 4, minWidth: 0 }}>
+                          <span className="ellipsis" style={{ fontWeight: 550 }}>{compact && t.track_no ? `${t.track_no}. ` : ''}{t.title}</span>
+                          {!t.audiobook && (
+                            <button className="btn ghost icon sm" style={{ padding: 2 }} onClick={() => copyPhrase(phrase(`que ponga la canción ${t.title}`))}
+                              title={phrase(`que ponga la canción ${t.title}`)} aria-label={`Cómo pedir ${t.title} a Alexa`}>
+                              <Mic size={13} color="var(--accent)" />
+                            </button>
+                          )}
+                        </span>
                         <span className="row" style={{ gap: 6 }}>
                           {t.hidden ? <span className="badge">oculta</span> : null}
                           {t.transcode !== 'none' ? <span className="badge" title={t.codec}>{t.transcode === 'recode' ? 'se convierte' : 'se reempaqueta'}</span> : null}
