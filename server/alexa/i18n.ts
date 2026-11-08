@@ -6,6 +6,10 @@ const es: Record<string, string | ((...a: string[]) => string)> = {
   playing: (name) => `Poniendo ${name}.`,
   resuming: (name) => `Continuando ${name}.`,
   startsWith: (title) => `Empieza con ${title}.`,
+  albumsOf: (count, artist, list, example) =>
+    `Tienes ${count === '1' ? 'un álbum' : `${count} álbumes`} de ${artist}: ${list}. ¿Cuál te pongo? Di, por ejemplo: el álbum ${example}.`,
+  whichAlbum: '¿Qué álbum te pongo?',
+  noAlbums: (artist) => `No tengo álbumes de ${artist} en tu biblioteca.`,
   notFound: (what) => `No encontré ${what} en tu biblioteca.`,
   didntCatch: 'No te entendí bien. ¿Qué quieres escuchar?',
   nothingPlayable: 'No hay pistas que se puedan reproducir.',

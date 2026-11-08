@@ -311,6 +311,19 @@ function handleIntent(deviceId: string, req: any, ctx: any): Res {
       updateDevice(deviceId, { queue_id: cur.queueId, pos: next.item.pos, offset_ms: 0 });
       return respond({ speech: t('ignored'), directives: [playDirective(next.track, tokenFor(cur.queueId, next.item.pos), 0, 'REPLACE_ALL')], end: true });
     }
+    case 'ListAlbumsIntent': {
+      const artist = slot(intent, 'artist');
+      if (!artist) return respond({ speech: t('didntCatch'), reprompt: t('reprompt'), end: false });
+      const plan = resolve({ artist }, { deviceId, utterance: `${name}: ${artist}` });
+      const albums = plan
+        ? all<{ album: string }>(`SELECT t.album FROM queue_items qi JOIN tracks t ON t.id = qi.track_id
+            WHERE qi.queue_id = ? AND t.album != '' GROUP BY t.album_n ORDER BY COUNT(*) DESC`, plan.queue.id).map((r) => r.album)
+        : [];
+      if (!albums.length) return respond({ speech: t('noAlbums', artist), end: true });
+      // Keep the spoken list short; the session stays open so the user can pick one.
+      const list = albums.slice(0, 8).join(', ') + (albums.length > 8 ? ', entre otros' : '');
+      return respond({ speech: t('albumsOf', String(albums.length), artist, list, albums[0]), reprompt: t('whichAlbum'), end: false });
+    }
     case 'AMAZON.HelpIntent':
       return respond({ speech: t('help', settings().invocationName), reprompt: t('reprompt'), end: false });
     case 'AMAZON.FallbackIntent':
