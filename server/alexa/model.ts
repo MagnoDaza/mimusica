@@ -5,11 +5,13 @@
 import { all } from '../db.ts';
 import { settings } from '../settings.ts';
 
-const LIMITS = { query: 6000, artist: 3000, album: 3000, song: 4000, genre: 300, playlist: 300, book: 500 };
+// shortcut: sizes verified to build on Amazon (2026-11); raise only after a successful test build.
+const LIMITS = { query: 3000, artist: 2000, album: 2000, song: 3000, genre: 300, playlist: 300, book: 500 };
 
 function clean(v: string) {
+  // Amazon's build fails silently (validation OK, build FAILURE) on symbols and control chars in slot values.
   return v
-    .replace(/[{}\[\]<>"]/g, ' ')
+    .replace(/[^\p{L}\p{M}\p{N} '.\-&]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 140);
