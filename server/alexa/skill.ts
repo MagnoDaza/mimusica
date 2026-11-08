@@ -135,7 +135,8 @@ function startPlan(deviceId: string, plan: PlayPlan, speechPrefix = true): Res {
   if (!hit) return respond({ speech: t('nothingPlayable'), end: true });
   prepare(hit.track);
   updateDevice(deviceId, { queue_id: q.id, pos: hit.item.pos, offset_ms: plan.startOffsetMs ?? 0, state: 'playing' });
-  const resumed = plan.startOffsetMs ? t('resuming', q.name) : t('playing', q.name);
+  const first = !q.audiobook && hit.track.title ? ` ${t('startsWith', hit.track.title)}` : '';
+  const resumed = plan.startOffsetMs ? t('resuming', q.name) : t('playing', q.name) + first;
   return respond({
     speech: speechPrefix ? resumed : undefined,
     directives: [playDirective(hit.track, tokenFor(q.id, hit.item.pos), plan.startOffsetMs ?? 0, 'REPLACE_ALL')],

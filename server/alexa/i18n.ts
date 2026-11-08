@@ -5,6 +5,7 @@ const es: Record<string, string | ((...a: string[]) => string)> = {
   reprompt: '¿Qué te pongo?',
   playing: (name) => `Poniendo ${name}.`,
   resuming: (name) => `Continuando ${name}.`,
+  startsWith: (title) => `Empieza con ${title}.`,
   notFound: (what) => `No encontré ${what} en tu biblioteca.`,
   didntCatch: 'No te entendí bien. ¿Qué quieres escuchar?',
   nothingPlayable: 'No hay pistas que se puedan reproducir.',
