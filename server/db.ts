@@ -162,6 +162,11 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 `);
 
+// Columns added after the first release (CREATE TABLE IF NOT EXISTS won't add them).
+for (const ddl of ["ALTER TABLE devices ADD COLUMN locale TEXT NOT NULL DEFAULT ''"]) {
+  try { db.exec(ddl); } catch { /* already there */ }
+}
+
 type Row = Record<string, any>;
 
 export function all<T = Row>(sql: string, ...params: any[]): T[] {

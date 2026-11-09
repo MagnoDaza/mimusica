@@ -140,8 +140,9 @@ class EchoSession {
       await jf('/Sessions/Capabilities/Full', this.auth, {
         PlayableMediaTypes: ['Audio'], SupportedCommands: [], SupportsMediaControl: true, SupportsPersistentIdentifier: true,
       });
-      const wsUrl = `${base().replace(/^http/, 'ws')}/socket?api_key=${this.login.token}&deviceId=${this.devId}`;
-      const ws = new WebSocket(wsUrl);
+      // Jellyfin 12 dropped the old "api_key" parameter: send "ApiKey" plus the header (older servers read that).
+      const wsUrl = `${base().replace(/^http/, 'ws')}/socket?ApiKey=${this.login.token}&deviceId=${this.devId}`;
+      const ws = new (WebSocket as any)(wsUrl, { headers: { Authorization: this.auth } }) as WebSocket;
       this.ws = ws;
       ws.onopen = () => { this.status = 'conectado'; log.info(`${this.name}: visible en Jellyfin`); };
       ws.onmessage = (ev) => void this.onMessage(String(ev.data));

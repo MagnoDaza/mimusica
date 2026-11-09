@@ -484,6 +484,11 @@ export function handleAlexa(envelope: any): Res {
   const ctx = envelope.context ?? {};
   const deviceId: string = ctx.System?.device?.deviceId ?? 'unknown';
   const type: string = req.type ?? '';
+  // Language the Echo speaks (es-MX, es-US, es-ES…): the skill must have that same language in Amazon.
+  if (req.locale && deviceId !== 'unknown') {
+    device(deviceId);
+    run('UPDATE devices SET locale = ? WHERE id = ? AND locale != ?', String(req.locale), deviceId, String(req.locale));
+  }
   log.debug(`${type}${req.intent ? ' ' + req.intent.name : ''}`);
 
   if (!settings().publicUrl && (type === 'IntentRequest' || type.startsWith('AudioPlayer') || type.startsWith('PlaybackController'))) {

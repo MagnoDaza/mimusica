@@ -46,6 +46,7 @@ export function DevicesPage() {
             <div className="row" style={{ padding: '10px 12px' }}>
               <span className={`badge ${d.shuffle ? 'accent' : ''}`}><Shuffle size={12} />{d.shuffle ? 'Aleatorio' : 'En orden'}</span>
               <span className={`badge ${d.loop ? 'accent' : ''}`}><Repeat size={12} />{d.loop ? 'Repite' : 'Sin repetir'}</span>
+              {d.locale && <span className="badge" title="Idioma del Echo: la skill debe tener este mismo idioma en Amazon">{d.locale}</span>}
               <span className="spacer" />
               {d.queue_id && <button className="btn ghost sm" onClick={() => setQueueOf(d)}><ListMusic size={15} />Cola</button>}
               <button className="btn ghost icon sm" aria-label="Renombrar" onClick={() => setEditing(d)}><Pencil size={15} /></button>

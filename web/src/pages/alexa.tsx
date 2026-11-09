@@ -3,7 +3,16 @@ import { Check, Download, Globe, Mic, PlugZap, Search, ExternalLink, Loader2 } f
 import { api, act, useApi } from '../lib.ts';
 import { CopyField, Cover } from '../ui.tsx';
 
-type S = { publicUrl: string; skillId: string; invocationName: string; envPublicUrl: boolean };
+type S = { publicUrl: string; skillId: string; invocationName: string; envPublicUrl: boolean; locale: string };
+
+// Amazon's language names for each region; "all" = add the three and paste the same model in each.
+const REGIONS: Record<string, { label: string; amazon: string[] }> = {
+  'es-MX': { label: 'México y Latinoamérica', amazon: ['Spanish (MX)'] },
+  'es-US': { label: 'Estados Unidos', amazon: ['Spanish (US)'] },
+  'es-ES': { label: 'España', amazon: ['Spanish (ES)'] },
+  all: { label: 'Varios países (los tres)', amazon: ['Spanish (MX)', 'Spanish (US)', 'Spanish (ES)'] },
+};
+const amazonName = (l: string) => ({ 'es-MX': 'Spanish (MX)', 'es-US': 'Spanish (US)', 'es-ES': 'Spanish (ES)' } as Record<string, string>)[l] ?? l;
 
 export function AlexaPage() {
   const { data: s, reload } = useApi<S>('/api/settings');
@@ -11,7 +20,7 @@ export function AlexaPage() {
   const [form, setForm] = useState<Partial<S>>({});
   const [check, setCheck] = useState<{ ok: boolean; error?: string } | null>(null);
   const [checking, setChecking] = useState(false);
-  useEffect(() => { if (s) setForm({ publicUrl: s.publicUrl, skillId: s.skillId, invocationName: s.invocationName }); }, [s]);
+  useEffect(() => { if (s) setForm({ publicUrl: s.publicUrl, skillId: s.skillId, invocationName: s.invocationName, locale: s.locale }); }, [s]);
 
   const save = async () => {
     await act(() => api('/api/settings', { method: 'PUT', body: form }), 'Guardado');
@@ -24,6 +33,9 @@ export function AlexaPage() {
   };
   const endpoint = s?.publicUrl ? `${s.publicUrl}/alexa` : 'https://<tu-nas>.<tu-tailnet>.ts.net/alexa';
   const setup = summary.data?.setup ?? {};
+  const region = REGIONS[form.locale ?? ''] ?? REGIONS['es-MX'];
+  const heard: { name: string; locale: string }[] = (summary.data?.devices ?? []).filter((d: any) => d.locale);
+  const missing = [...new Set(heard.map((d) => amazonName(d.locale)))].filter((l) => !region.amazon.includes(l));
 
   return (
     <div className="page">
@@ -65,11 +77,23 @@ export function AlexaPage() {
             </Step>
 
             <Step n={2} done={!!setup.skill} title="Crea la skill en Amazon">
+              <div className="field">
+                <label htmlFor="reg">¿Dónde están tus Echo?</label>
+                <select id="reg" className="select" value={form.locale ?? 'es-MX'} onChange={(e) => setForm({ ...form, locale: e.target.value })}>
+                  {Object.entries(REGIONS).map(([k, r]) => <option key={k} value={k}>{r.label} — {r.amazon.join(', ')}</option>)}
+                </select>
+                <span className="hint">Si un Echo no reconoce la skill, casi siempre es esto: la skill debe tener el mismo idioma que el Echo
+                  (lo ves en la app Alexa → Dispositivos → tu Echo → Idioma).</span>
+                {heard.map((d) => <span key={d.name} className="hint">Detectado: <b>{d.name}</b> habla <b>{amazonName(d.locale)}</b>.</span>)}
+                {!!missing.length && <span className="small" style={{ color: 'var(--warn)' }}>
+                  Tienes Echo en {missing.join(' y ')}: añade ese idioma en Language settings de Amazon y pega allí el mismo modelo, o elige «Varios países».</span>}
+              </div>
               <ol>
                 <li>Entra en la <a href="https://developer.amazon.com/alexa/console/ask" target="_blank" rel="noreferrer">consola de Alexa Skills <ExternalLink size={12} /></a> con <b>la misma cuenta de tus Echo</b> y pulsa <b>Create Skill</b>.</li>
-                <li>Nombre: el que quieras. Idioma: <b>Spanish (ES)</b>, <b>(MX)</b> o <b>(US)</b> según tus Echo. Tipo: <b>Other → Custom</b>. Hosting: <b>Provision your own</b>. Plantilla: <b>Start from Scratch</b>.</li>
+                <li>Nombre: el que quieras. Idioma: <b>{region.amazon[0]}</b>. Tipo: <b>Other → Custom</b>. Hosting: <b>Provision your own</b>. Plantilla: <b>Start from Scratch</b>.
+                  {region.amazon.length > 1 && <> Después, en <b>Language settings</b> (arriba a la izquierda) añade también <b>{region.amazon.slice(1).join(' y ')}</b>.</>}</li>
                 <li>En <b>Build → Interfaces</b> activa <b>Audio Player</b> y guarda.</li>
-                <li>En <b>Interaction Model → JSON Editor</b> arrastra el modelo de abajo, pulsa <b>Save</b> y luego <b>Build skill</b>. Cuando añadas mucha música nueva, descárgalo y pégalo otra vez: lleva los nombres de tus artistas y álbumes para que Alexa los entienda mejor.</li>
+                <li>En <b>Interaction Model → JSON Editor</b> arrastra el modelo de abajo, pulsa <b>Save</b> y luego <b>Build skill</b>{region.amazon.length > 1 ? ' (en cada idioma: cámbialo arriba a la izquierda)' : ''}. Cuando añadas mucha música nueva, descárgalo y pégalo otra vez: lleva los nombres de tus artistas y álbumes para que Alexa los entienda mejor.</li>
               </ol>
               <div className="row wrap">
                 <div className="field grow" style={{ minWidth: 220 }}>
