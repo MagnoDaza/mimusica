@@ -3,7 +3,7 @@ import { all, get, run } from '../db.ts';
 import { settings, sign } from '../settings.ts';
 import { resolve, findPlaylist, type Criteria, type PlayPlan } from '../search.ts';
 import {
-  navigate, itemAt, getQueue, createQueue, saveBookmark, getBookmark, findPosForTrack, LAST_BOOKMARK,
+  navigate, itemAt, getQueue, createQueue, saveBookmark, getBookmark, findPosForTrack, insertTracks, LAST_BOOKMARK,
   type Track, type Step,
 } from '../queue.ts';
 import { addMessage } from '../messages.ts';
@@ -219,6 +219,47 @@ function criteriaFor(intentName: string, intent: any): Criteria | undefined {
   }
 }
 
+/** Enqueue / play-next requests: the most specific slot the user gave wins. */
+function queueCriteria(intent: any): Criteria {
+  const song = slot(intent, 'song'), album = slot(intent, 'album'), artist = slot(intent, 'artist'), query = slot(intent, 'query');
+  if (song) return { song, artist };
+  if (album) return { album, artist };
+  if (artist) return { artist };
+  return { query };
+}
+
+const MAX_ADD = 200;
+
+function addToQueue(deviceId: string, intent: any, ctx: any, next: boolean): Res {
+  const d = device(deviceId);
+  const token: string | undefined = ctx?.AudioPlayer?.token;
+  const criteria = queueCriteria(intent);
+  const asked = describeCriteria(criteria);
+  if (!asked) return respond({ speech: t('whatToQueue'), reprompt: t('whatToQueue'), end: false });
+  const plan = resolve(criteria, { deviceId, utterance: `${intent.name}: ${asked}` });
+  if (!plan) return respond({ speech: t('notFound', asked), end: true });
+  const cur = currentTrack(deviceId, token);
+  const q = cur && getQueue(cur.queueId);
+  // Nothing of ours is playing (or a radio is): just play it.
+  if (!cur || !q || q.stream_url) return startPlan(deviceId, plan);
+  const ids = all<{ track_id: string }>('SELECT track_id FROM queue_items WHERE queue_id = ? ORDER BY pos LIMIT ?', plan.queue.id, MAX_ADD)
+    .map((r) => r.track_id);
+  insertTracks(cur.queueId, ids, next ? cur.pos : undefined);
+  const what = ids.length === 1 ? (itemAt(plan.queue.id, 0)?.track.title ?? asked) : asked;
+  const speech = next ? t('queuedNext', what, String(ids.length)) : t('queuedEnd', what, String(ids.length));
+  // Alexa already holds the old "next" track: replace it with whatever follows now.
+  if (ctx?.AudioPlayer?.playerActivity === 'PLAYING' && token) {
+    const after = navigate(cur.queueId, cur.pos, 'next', { loop: !!d.loop, shuffle: !!d.shuffle });
+    const directives: Directive[] = [clearEnqueued()];
+    if (after) {
+      prepare(after.track);
+      directives.push(playDirective(after.track, tokenFor(cur.queueId, after.item.pos), 0, 'ENQUEUE', token));
+    }
+    return respond({ speech, directives, end: true });
+  }
+  return respond({ speech, end: true });
+}
+
 function describeCriteria(c: Criteria) {
   return c.query ?? c.book ?? c.playlist ?? [c.song, c.album, c.artist, c.genre].filter(Boolean).join(', ');
 }
@@ -251,6 +292,16 @@ function handleIntent(deviceId: string, req: any, ctx: any): Res {
     }
     case 'ResumeLastIntent':
       return resumeLast(deviceId);
+    case 'EnqueueIntent':
+      return addToQueue(deviceId, intent, ctx, false);
+    case 'PlayNextIntent':
+      return addToQueue(deviceId, intent, ctx, true);
+    case 'UpNextIntent': {
+      const cur = currentTrack(deviceId, token);
+      if (!cur) return respond({ speech: t('nothingPlaying'), end: true });
+      const after = navigate(cur.queueId, cur.pos, 'next', { loop: !!d.loop, shuffle: !!d.shuffle });
+      return respond({ speech: after ? t('upNext', after.track.title, after.track.artist) : t('atEnd'), end: true });
+    }
     case 'AMAZON.ResumeIntent':
       return resumeDevice(deviceId);
     case 'AMAZON.PauseIntent':

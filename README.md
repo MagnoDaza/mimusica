@@ -5,7 +5,7 @@ Sin suscripciones ni servidores de terceros: el NAS habla directamente con Alexa
 
 ```
 Echo ──► Alexa (Amazon) ──HTTPS──► Tailscale Funnel ──► contenedor mimusica :8081  (solo /alexa, /stream, /art, /radio)
-                                                         consola web           :8080  (solo tu red / tailnet)
+                                                         consola web           :8090  (solo tu red local)
 ```
 
 ## Qué hace
@@ -45,11 +45,11 @@ La especificación funcional completa está en [docs/ESPECIFICACION.md](docs/ESP
    cd /volume1/docker/mimusica
    docker compose up -d
    ```
-5. Abre **http://IP-DEL-NAS:8080**, añade tu carpeta de música y sigue la pestaña **Configurar Alexa**. Ahí están los pasos de la consola de Amazon, el modelo de interacción para descargar y la URL del endpoint.
+5. Abre **http://IP-DEL-NAS:8090**, añade tu carpeta de música y sigue la pestaña **Configurar Alexa**. Ahí están los pasos de la consola de Amazon, el modelo de interacción para descargar y la URL del endpoint.
 
 > Si ya tienes un dispositivo llamado `mimusica` en Tailscale, el nuevo se llamará `mimusica-1`. Ajusta entonces `PUBLIC_URL` en el compose.
 
-> Usa los puertos 8080 (consola) y 8081 (Alexa). Si ya los ocupa otro contenedor, cambia `CONSOLE_PORT` en `.env`.
+> La consola usa el puerto 8090 del NAS (cámbialo con `CONSOLE_PORT` en `.env`). El 8081 de Alexa no se publica en el NAS: solo lo ve Tailscale.
 
 ## Actualizaciones automáticas
 
@@ -57,7 +57,7 @@ Cada cambio en la rama `main` lanza [GitHub Actions](.github/workflows/docker.ym
 En el NAS, el contenedor `mimusica-watchtower` mira cada hora si hay imagen nueva (cámbialo con `UPDATE_INTERVAL` en `.env`, en segundos). Si la hay, recrea `mimusica` con ella y borra la vieja.
 
 - Solo actualiza el contenedor `mimusica` (usa el ámbito `mimusica`), así que no interfiere con otro Watchtower que ya tengas.
-- No toca `tailscale`: si ese contenedor se recreara, la app perdería la red. Actualízalo a mano de vez en cuando con `docker compose pull tailscale && docker compose up -d`.
+- No toca `tailscale`. Actualízalo a mano de vez en cuando con `docker compose pull tailscale && docker compose up -d`.
 - Tus datos (`./data`) y tu música no se tocan al actualizar.
 - Para publicar una versión con número, crea una etiqueta `v1.2.0`: genera también la imagen `:1.2.0`.
 
@@ -86,7 +86,7 @@ npm run typecheck && npx tsc --noEmit -p web
 
 ## Seguridad
 
-- Al puerto público (8081) solo llegan `/alexa`, `/stream`, `/art`, `/radio` y `/health`. La consola no se publica.
+- Al puerto público (8081, solo a través de Tailscale Funnel) solo llegan `/alexa`, `/stream`, `/art`, `/radio` y `/health`. La consola no se publica.
 - Cada petición a `/alexa` se verifica: firma SHA-256 de Amazon con cadena de certificados hasta una raíz de confianza, marca de tiempo de ±150 s y, si lo configuras, el ID de tu skill.
 - Las URLs de audio y carátulas van firmadas con HMAC. Sin firma, el puerto público responde 403.
 - La música se monta en solo lectura.

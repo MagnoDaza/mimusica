@@ -52,6 +52,46 @@ function ordered(queueId: string, shuffle: boolean, audiobook: boolean): QueueIt
   return all<QueueItem>(`SELECT * FROM queue_items WHERE queue_id = ? ORDER BY ${order}`, queueId);
 }
 
+/**
+ * Add tracks to a queue: right after `afterPos` ("a continuación") or at the end ("a la cola").
+ * Positions behind the insertion point move up, and so do devices pointing at them.
+ */
+export function insertTracks(queueId: string, trackIds: string[], afterPos?: number) {
+  if (!trackIds.length) return;
+  const n = trackIds.length;
+  tx(() => {
+    let first: number;
+    let rand: (i: number) => number;
+    if (afterPos === undefined) {
+      first = get<{ n: number }>('SELECT COALESCE(MAX(pos) + 1, 0) AS n FROM queue_items WHERE queue_id = ?', queueId)!.n;
+      // Above every crypto.randomInt(1_000_000) value: still last in shuffle mode.
+      rand = (i) => 1_000_000 + first + i;
+    } else {
+      first = afterPos + 1;
+      // Same rand_order as the current item and a higher pos: also next in shuffle mode.
+      const cur = get<{ r: number }>('SELECT rand_order AS r FROM queue_items WHERE queue_id = ? AND pos = ?', queueId, afterPos)?.r ?? 0;
+      const audiobook = !!getQueue(queueId)?.audiobook;
+      rand = (i) => (audiobook ? first + i : cur);
+      // Two steps so the (queue_id, pos) primary key never collides mid-update.
+      run('UPDATE queue_items SET pos = -(pos + ?) WHERE queue_id = ? AND pos > ?', n, queueId, afterPos);
+      run('UPDATE queue_items SET pos = -pos WHERE queue_id = ? AND pos < 0', queueId);
+      run('UPDATE devices SET pos = pos + ? WHERE queue_id = ? AND pos > ?', n, queueId, afterPos);
+    }
+    trackIds.forEach((t, i) => run('INSERT INTO queue_items (queue_id, pos, rand_order, track_id) VALUES (?, ?, ?, ?)', queueId, first + i, rand(i), t));
+  });
+  touchQueue(queueId);
+}
+
+/** The queue in play order (respecting shuffle), for the web console. */
+export function listQueue(queueId: string, shuffle: boolean) {
+  const q = getQueue(queueId);
+  if (!q) return [];
+  const order = shuffle && !q.audiobook ? 'qi.rand_order, qi.pos' : 'qi.pos';
+  return all<{ pos: number; id: string; title: string; artist: string; album: string; duration: number; has_art: number; hidden: number }>(
+    `SELECT qi.pos, t.id, t.title, t.artist, t.album, t.duration, t.has_art, t.hidden FROM queue_items qi
+     JOIN tracks t ON t.id = qi.track_id WHERE qi.queue_id = ? ORDER BY ${order}`, queueId);
+}
+
 export type Step = 'first' | 'next' | 'previous' | 'current';
 
 /**

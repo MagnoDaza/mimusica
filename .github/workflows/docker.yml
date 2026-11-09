@@ -39,6 +39,8 @@ jobs:
           node scripts/simulate-alexa.ts http://localhost:18080 | tee out.txt
           grep -q 'Poniendo el álbum A Night at the Opera' out.txt
           grep -q 'Continuando El Principito' out.txt
+          grep -q 'después de esta suena Hells Bells' out.txt
+          grep -q 'al final de la cola' out.txt
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:18081/api/summary)" = 404
 
   image:

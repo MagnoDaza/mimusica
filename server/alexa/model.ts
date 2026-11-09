@@ -42,8 +42,22 @@ function invocation(name: string) {
   return n.split(' ').length >= 2 ? n : 'mi biblioteca';
 }
 
-const verbs = ['pon', 'ponme', 'reproduce', 'toca', 'quiero escuchar', 'quiero oír', 'escuchar', 'play'];
-const expand = (templates: string[]) => [...new Set(templates.flatMap((t) => (t.includes('VERB') ? verbs.map((v) => t.replace('VERB', v)) : [t])))];
+const verbs = ['pon', 'ponme', 'reproduce', 'reprodúceme', 'toca', 'tócame', 'quiero escuchar', 'quiero oír', 'escuchar',
+  'me apetece escuchar', 'déjame escuchar', 'play'];
+// Ways of saying "add to the queue" / "play after this one".
+const adds = ['añade', 'agrega', 'mete', 'suma', 'pon'];
+const queues = ['a la cola', 'a la cola de reproducción', 'al final de la cola', 'a la lista de reproducción', 'al final'];
+const nexts = ['a continuación', 'después de esta', 'justo después', 'la siguiente', 'después', 'luego'];
+const expandWith = (templates: string[], vars: Record<string, string[]>) => [...new Set(templates.flatMap((t) => {
+  let out = [t];
+  for (const [k, vs] of Object.entries(vars)) out = out.flatMap((x) => (x.includes(k) ? vs.map((v) => x.replaceAll(k, v)) : [x]));
+  return out;
+}))];
+const expand = (templates: string[]) => expandWith(templates, { VERB: verbs });
+// The same "what" in every form the search understands.
+const whats = ['{query}', 'la canción {song}', 'el tema {song}', '{song} de {artist}', 'la canción {song} de {artist}',
+  'el álbum {album}', 'el disco {album}', 'el álbum {album} de {artist}', 'música de {artist}', 'canciones de {artist}'];
+const queueSlots = [{ name: 'query', type: 'MUSIC_QUERY' }, { name: 'song', type: 'MUSIC_SONG' }, { name: 'album', type: 'MUSIC_ALBUM' }, { name: 'artist', type: 'MUSIC_ARTIST' }];
 
 export function buildInteractionModel() {
   // Most played first so catalogue limits keep what you actually listen to.
@@ -96,6 +110,16 @@ export function buildInteractionModel() {
         'lee el capítulo {chapter} de {book}', 'pon el capítulo {chapter} de {book}', 'que lea {book}'] },
     { name: 'PlayEverythingIntent', slots: [],
       samples: expand(['VERB música', 'VERB mi música', 'VERB todo', 'VERB cualquier cosa', 'VERB lo que sea', 'que ponga música']) },
+    { name: 'EnqueueIntent', slots: queueSlots,
+      samples: expandWith(['ADD WHAT QUEUE', 'que ADD WHAT QUEUE', 'ADD a la cola WHAT', 'encola WHAT', 'que encole WHAT'],
+        { ADD: adds.filter((a) => a !== 'pon'), QUEUE: queues, WHAT: whats })
+        .concat(expandWith(['pon WHAT QUEUE'], { QUEUE: queues.filter((q) => q !== 'al final'), WHAT: whats })) },
+    { name: 'PlayNextIntent', slots: queueSlots,
+      samples: expandWith(['pon WHAT NEXT', 'ponme WHAT NEXT', 'ADD WHAT NEXT', 'que suene WHAT NEXT', 'quiero escuchar WHAT NEXT', 'NEXT pon WHAT'],
+        { ADD: adds.filter((a) => a !== 'pon'), NEXT: nexts, WHAT: whats }) },
+    { name: 'UpNextIntent', slots: [],
+      samples: ['qué viene después', 'qué suena después', 'qué canción viene después', 'cuál es la siguiente canción', 'qué es lo siguiente',
+        'qué sigue', 'qué toca después', 'qué hay en la cola', 'qué hay después'] },
     { name: 'PlaySelectionIntent', slots: [], samples: ['pon la selección', 'pon mi selección', 'reproduce la selección actual'] },
     { name: 'ResumeLastIntent', slots: [],
       samples: ['continúa donde lo dejé', 'sigue donde lo dejé', 'sigue con lo último', 'pon lo último', 'continúa lo último', 'retoma la música'] },

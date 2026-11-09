@@ -10,7 +10,7 @@ import { settings, updateSettings, publicSettings, setPassword, checkPassword, s
 import { listMessages, clearMessage, clearAllMessages } from '../messages.ts';
 import { requestScan, requestScanAll, rescanTracks, folderLogPath, isScanning, watchFolders } from '../scanner.ts';
 import { explain, type Criteria } from '../search.ts';
-import { createQueue, listBookmarks, clearBookmark } from '../queue.ts';
+import { createQueue, listBookmarks, clearBookmark, listQueue } from '../queue.ts';
 import { buildInteractionModel } from '../alexa/model.ts';
 import { ffmpegAvailable, clearArtCache, clearTranscodeCache } from '../media.ts';
 import { m3uExport } from '../playlistfiles.ts';
@@ -291,6 +291,18 @@ export function registerApi(app: FastifyInstance) {
     const { name } = (req.body ?? {}) as { name?: string };
     run('UPDATE devices SET name = ? WHERE id = ?', (name ?? '').trim(), (req.params as any).id);
     return { ok: true };
+  });
+  /** What a device is walking through, in play order, with the current track marked. */
+  app.get('/api/devices/:id/queue', async (req, reply) => {
+    const d = get<any>('SELECT * FROM devices WHERE id = ?', (req.params as any).id);
+    if (!d) return reply.code(404).send({ error: 'Dispositivo no encontrado' });
+    const q = d.queue_id ? get<any>('SELECT name, audiobook, stream_url FROM queues WHERE id = ?', d.queue_id) : undefined;
+    if (!q) return { name: '', current: -1, items: [] };
+    const list = listQueue(d.queue_id, !!d.shuffle);
+    const idx = Math.max(0, list.findIndex((i) => i.pos === d.pos));
+    // "Toda tu música" can be thousands of tracks: send a window around the current one.
+    const from = Math.max(0, idx - 5);
+    return { name: q.name, radio: !!q.stream_url, current: d.pos, total: list.length, played: idx, offset: from, items: list.slice(from, idx + 200) };
   });
   app.delete('/api/devices/:id', async (req) => (run('DELETE FROM devices WHERE id = ?', (req.params as any).id), { ok: true }));
 
