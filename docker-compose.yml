@@ -31,6 +31,10 @@ services:
     environment:
       - PUBLIC_URL=https://mimusica.${TS_TAILNET}.ts.net
       - ALEXA_SKILL_ID=${ALEXA_SKILL_ID:-}
+      # Opcional: cada Echo aparece en «Reproducir en» de Jellyfin. También se puede poner en Ajustes.
+      - JELLYFIN_URL=${JELLYFIN_URL:-}
+      - JELLYFIN_USER=${JELLYFIN_USER:-}
+      - JELLYFIN_PASSWORD=${JELLYFIN_PASSWORD:-}
       - TZ=${TZ:-Europe/Madrid}
     volumes:
       # Tu música, solo lectura. Añade más líneas si tienes varias carpetas (p. ej. /volume1/Audiolibros:/music/audiolibros:ro).

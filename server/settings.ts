@@ -74,6 +74,9 @@ function load(): Settings {
   // Env vars win over stored values so the compose file stays the source of truth.
   if (config.publicUrl) s.publicUrl = config.publicUrl;
   if (process.env.ALEXA_SKILL_ID) s.skillId = process.env.ALEXA_SKILL_ID;
+  if (process.env.JELLYFIN_URL) s.jellyfinUrl = process.env.JELLYFIN_URL;
+  if (process.env.JELLYFIN_USER) s.jellyfinUser = process.env.JELLYFIN_USER;
+  if (process.env.JELLYFIN_PASSWORD) s.jellyfinPassword = process.env.JELLYFIN_PASSWORD;
   setVerbose(s.verboseLogging);
   return s;
 }
