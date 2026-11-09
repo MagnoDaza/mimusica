@@ -11,6 +11,7 @@ import { listMessages, clearMessage, clearAllMessages } from '../messages.ts';
 import { requestScan, requestScanAll, rescanTracks, folderLogPath, isScanning, watchFolders } from '../scanner.ts';
 import { explain, type Criteria } from '../search.ts';
 import { createQueue, listBookmarks, clearBookmark, listQueue } from '../queue.ts';
+import { syncJellyfin, jellyfinStatus } from '../jellyfin.ts';
 import { buildInteractionModel } from '../alexa/model.ts';
 import { ffmpegAvailable, clearArtCache, clearTranscodeCache } from '../media.ts';
 import { m3uExport } from '../playlistfiles.ts';
@@ -304,7 +305,8 @@ export function registerApi(app: FastifyInstance) {
     const from = Math.max(0, idx - 5);
     return { name: q.name, radio: !!q.stream_url, current: d.pos, total: list.length, played: idx, offset: from, items: list.slice(from, idx + 200) };
   });
-  app.delete('/api/devices/:id', async (req) => (run('DELETE FROM devices WHERE id = ?', (req.params as any).id), { ok: true }));
+  app.delete('/api/devices/:id', async (req) => (run('DELETE FROM devices WHERE id = ?', (req.params as any).id), syncJellyfin(), { ok: true }));
+  app.get('/api/jellyfin/status', async () => jellyfinStatus());
 
   // ---------------------------------------------------------------- history & learnings
   app.get('/api/history', async (req) => {
@@ -352,6 +354,7 @@ export function registerApi(app: FastifyInstance) {
     const next = updateSettings((req.body ?? {}) as any);
     if (before.extraFormats !== next.extraFormats) requestScanAll();
     if (before.transcodeBitrate !== next.transcodeBitrate || before.replayGain !== next.replayGain) await clearTranscodeCache();
+    syncJellyfin();
     return publicSettings();
   });
   app.post('/api/maintenance/clear-art', async () => (await clearArtCache(), { ok: true }));

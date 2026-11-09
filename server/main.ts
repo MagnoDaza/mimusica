@@ -13,6 +13,7 @@ import { handleAlexa } from './alexa/skill.ts';
 import { requestScanAll, schedulePeriodicRescan, watchFolders } from './scanner.ts';
 import { addMessage } from './messages.ts';
 import { ffmpegAvailable } from './media.ts';
+import { startJellyfin } from './jellyfin.ts';
 
 const log = logger('main');
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -63,7 +64,8 @@ async function startPublic() {
 
 /** Web console + API. Keep it on the LAN / tailnet. */
 async function startConsole() {
-  const app = Fastify({ logger: false, trustProxy: true, bodyLimit: 4 * 1024 * 1024 });
+  // Alexa device IDs are ~200 chars; Fastify's default maxParamLength (100) answers 414 to /api/devices/:id.
+  const app = Fastify({ logger: false, trustProxy: true, bodyLimit: 4 * 1024 * 1024, maxParamLength: 1000 });
   rawJson(app);
   health(app);
   alexaRoute(app); // handy for local tests with ALEXA_SKIP_VERIFY=1
@@ -96,6 +98,7 @@ async function main() {
   requestScanAll();
   schedulePeriodicRescan();
   watchFolders();
+  startJellyfin();
 }
 
 main().catch((err) => {

@@ -82,6 +82,18 @@ export function insertTracks(queueId: string, trackIds: string[], afterPos?: num
   touchQueue(queueId);
 }
 
+/**
+ * Shuffle mode: append positions (nothing moves, so tokens Alexa already holds stay valid)
+ * but share `randOrder` with an item, so the new tracks play right after it.
+ */
+export function appendAfterRand(queueId: string, trackIds: string[], randOrder: number) {
+  tx(() => {
+    const first = get<{ n: number }>('SELECT COALESCE(MAX(pos) + 1, 0) AS n FROM queue_items WHERE queue_id = ?', queueId)!.n;
+    trackIds.forEach((t, i) => run('INSERT INTO queue_items (queue_id, pos, rand_order, track_id) VALUES (?, ?, ?, ?)', queueId, first + i, randOrder, t));
+  });
+  touchQueue(queueId);
+}
+
 /** The queue in play order (respecting shuffle), for the web console. */
 export function listQueue(queueId: string, shuffle: boolean) {
   const q = getQueue(queueId);

@@ -24,6 +24,10 @@ export type Settings = {
   /** amzn1.ask.skill.… — requests from other skills are rejected. Empty = accept any. */
   skillId: string;
   invocationName: string;
+  /** Jellyfin server (e.g. http://192.168.1.2:8096) + a user: each Echo appears in its «Reproducir en» menu. */
+  jellyfinUrl: string;
+  jellyfinUser: string;
+  jellyfinPassword: string;
   locale: string;
   requirePassword: boolean;
   passwordHash: string;
@@ -46,6 +50,9 @@ const defaults: Settings = {
   publicUrl: config.publicUrl,
   skillId: process.env.ALEXA_SKILL_ID ?? '',
   invocationName: 'mi biblioteca',
+  jellyfinUrl: '',
+  jellyfinUser: '',
+  jellyfinPassword: '',
   locale: 'es-ES',
   requirePassword: false,
   passwordHash: '',
@@ -109,8 +116,8 @@ export function checkPassword(password: string): boolean {
 
 /** Public view: never leaks secrets. */
 export function publicSettings() {
-  const { secret, passwordHash, ...rest } = current;
-  return { ...rest, hasPassword: !!passwordHash };
+  const { secret, passwordHash, jellyfinPassword, ...rest } = current;
+  return { ...rest, hasPassword: !!passwordHash, hasJellyfinPassword: !!jellyfinPassword };
 }
 
 /** HMAC for signed URLs (stream / art) handed to Alexa. */

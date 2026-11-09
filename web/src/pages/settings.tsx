@@ -7,6 +7,7 @@ type S = {
   extraFormats: boolean; transcodeBitrate: number; replayGain: boolean; audiobookGenres: string[]; scanIgnoreFiles: string;
   rescanHours: number; defaultPlaylist: string; defaultPlaylistShuffle: boolean; sendAlbumArt: boolean; verboseLogging: boolean;
   autoImportPlaylists: boolean; requirePassword: boolean; hasPassword: boolean; mediaRoots: string[];
+  jellyfinUrl: string; jellyfinUser: string; hasJellyfinPassword: boolean; jellyfinPassword?: string;
 };
 
 function Row({ title, desc, children }: { title: string; desc?: ReactNode; children: ReactNode }) {
@@ -24,6 +25,7 @@ export function SettingsPage() {
   const [s, setS] = useState<S | undefined>();
   const [genre, setGenre] = useState('');
   const [pw, setPw] = useState('');
+  const jfStatus = useApi<{ name: string; status: string }[]>('/api/jellyfin/status', { poll: 5000 });
   useEffect(() => { if (data) setS(data); }, [data]);
   if (!s) return null;
   const dirty = JSON.stringify(s) !== JSON.stringify(data);
@@ -97,6 +99,27 @@ export function SettingsPage() {
           <Row title="Lista por defecto en aleatorio">
             <Switch checked={s.defaultPlaylistShuffle} onChange={(v) => set('defaultPlaylistShuffle', v)} label="Aleatorio" />
           </Row>
+        </div>
+      </section>
+
+      <section className="section">
+        <h2>Jellyfin</h2>
+        <div className="card">
+          <Row title="Servidor" desc="Con esto, cada Echo aparece en el botón «Reproducir en» de Jellyfin. Si el Echo está sonando, lo que elijas se añade a su cola; si no, queda como «la selección».">
+            <input className="input mono" placeholder="http://192.168.1.2:8096" value={s.jellyfinUrl} onChange={(e) => set('jellyfinUrl', e.target.value)} />
+          </Row>
+          <Row title="Usuario de Jellyfin" desc="Los Echo aparecen en los dispositivos de este usuario.">
+            <input className="input" value={s.jellyfinUser} onChange={(e) => set('jellyfinUser', e.target.value)} autoComplete="off" />
+          </Row>
+          <Row title="Contraseña de Jellyfin" desc={s.hasJellyfinPassword ? 'Guardada. Escribe otra para cambiarla.' : 'Déjala vacía si el usuario no tiene contraseña.'}>
+            <input className="input" type="password" autoComplete="new-password" value={s.jellyfinPassword ?? ''}
+              onChange={(e) => set('jellyfinPassword', e.target.value)} placeholder={s.hasJellyfinPassword ? '••••••••' : ''} />
+          </Row>
+          {!!jfStatus.data?.length && (
+            <Row title="Estado" desc="Si un Echo nuevo aún no aparece, espera un minuto.">
+              <div className="small">{jfStatus.data.map((x) => <div key={x.name}>{x.name}: {x.status}</div>)}</div>
+            </Row>
+          )}
         </div>
       </section>
 

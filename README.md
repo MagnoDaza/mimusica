@@ -71,6 +71,10 @@ Si prefieres compilar en el NAS: `docker compose -f docker-compose.yml -f docker
 
 El nombre de invocación se cambia en la consola (Configurar Alexa).
 
+**Cola:** «…que añada la canción Yesterday a la cola» · «…que ponga Thriller a continuación» · «…qué viene después». La cola de cada Echo se ve en *Dispositivos → Cola*.
+
+**Jellyfin:** en *Ajustes → Jellyfin* pon la dirección (p. ej. `http://192.168.1.2:8096`), tu usuario y tu contraseña. Cada Echo aparece en el botón *Reproducir en* de Jellyfin. Si el Echo está sonando, lo que elijas entra en su cola después de la siguiente canción. Si no, queda preparado y dices «Alexa, pide a mi biblioteca que ponga la selección»: Amazon no deja que un servidor encienda el Echo por su cuenta.
+
 ## Desarrollo
 
 Necesitas Node 24 o superior. No hace falta compilar el servidor: Node ejecuta TypeScript directamente.
