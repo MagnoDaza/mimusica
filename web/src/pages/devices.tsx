@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Speaker, Pencil, Trash2, Shuffle, Repeat, ListMusic } from 'lucide-react';
+import { Speaker, Pencil, Trash2, Shuffle, Repeat, ListMusic, ChevronUp, ChevronDown, ChevronsUp, X } from 'lucide-react';
 import { api, act, useApi, fmtAgo, fmtDuration } from '../lib.ts';
 import { Cover, Empty, Eq, Modal } from '../ui.tsx';
 
@@ -75,20 +75,26 @@ function Rename({ device, onClose }: { device: any; onClose: () => void }) {
 }
 
 function QueueView({ device, onClose }: { device: any; onClose: () => void }) {
-  const { data } = useApi<any>(`/api/devices/${encodeURIComponent(device.id)}/queue`, { poll: 5000 });
+  const { data, reload } = useApi<any>(`/api/devices/${encodeURIComponent(device.id)}/queue`, { poll: 5000 });
   const items: any[] = data?.items ?? [];
+  const edit = async (pos: number, to?: number) => {
+    await act(() => api(`/api/devices/${encodeURIComponent(device.id)}/queue/edit`, { body: { pos, to } }));
+    reload();
+  };
   const left = data ? data.total - data.played - 1 : 0;
   return (
     <Modal wide title={`Cola de ${device.name || 'Echo'}`} onClose={onClose}>
       {data && <p className="muted small" style={{ marginTop: 0 }}>
         {data.radio ? 'Está sonando una radio: no tiene cola.' : `${data.name} · ${data.total} canciones · quedan ${Math.max(0, left)}`}
-        {' '}Para añadir: «añade la canción X a la cola» o «pon X a continuación».
+        {' '}Para añadir: «añade la canción X a la cola» o «pon X a continuación». La siguiente canción puede estar ya cargada en el Echo: los cambios se notan a partir de la que viene después.
       </p>}
       {data && !items.length && !data.radio && <div className="muted">Cola vacía.</div>}
       <div className="card">
         {items.map((t, i) => {
           const now = t.pos === data.current;
           const past = data.offset + i < data.played;
+          const upcoming = data.offset + i > data.played;
+          const prev = items[i - 1], next = items[i + 1], first = items[data.played - data.offset + 1];
           return (
             <div key={t.pos} className="list-item" ref={now ? (el) => el?.scrollIntoView({ block: 'center' }) : undefined}
               style={{ padding: '8px 12px', opacity: past || t.hidden ? 0.5 : 1, background: now ? 'var(--accent-soft)' : undefined }}>
@@ -100,6 +106,16 @@ function QueueView({ device, onClose }: { device: any; onClose: () => void }) {
               </div>
               {now ? <span className="badge ok"><Eq />{device.state === 'playing' ? 'Sonando' : 'Aquí'}</span>
                 : <span className="faint small">{fmtDuration(t.duration)}</span>}
+              {upcoming && !data.radio && <span className="row" style={{ gap: 2 }}>
+                <button className="btn ghost icon sm" aria-label="Poner a continuación" title="Poner a continuación"
+                  disabled={first?.pos === t.pos} onClick={() => edit(t.pos, first.pos)}><ChevronsUp size={15} /></button>
+                <button className="btn ghost icon sm" aria-label="Subir" title="Subir"
+                  disabled={first?.pos === t.pos} onClick={() => edit(t.pos, prev.pos)}><ChevronUp size={15} /></button>
+                <button className="btn ghost icon sm" aria-label="Bajar" title="Bajar"
+                  disabled={!next} onClick={() => edit(t.pos, next.pos)}><ChevronDown size={15} /></button>
+                <button className="btn ghost icon sm danger" aria-label="Quitar de la cola" title="Quitar de la cola"
+                  onClick={() => edit(t.pos)}><X size={15} /></button>
+              </span>}
             </div>
           );
         })}

@@ -10,7 +10,7 @@ import { settings, updateSettings, publicSettings, setPassword, checkPassword, s
 import { listMessages, clearMessage, clearAllMessages } from '../messages.ts';
 import { requestScan, requestScanAll, rescanTracks, folderLogPath, isScanning, watchFolders } from '../scanner.ts';
 import { explain, type Criteria } from '../search.ts';
-import { createQueue, listBookmarks, clearBookmark, listQueue } from '../queue.ts';
+import { createQueue, listBookmarks, clearBookmark, listQueue, editQueue } from '../queue.ts';
 import { syncJellyfin, jellyfinStatus } from '../jellyfin.ts';
 import { buildInteractionModel } from '../alexa/model.ts';
 import { ffmpegAvailable, clearArtCache, clearTranscodeCache } from '../media.ts';
@@ -304,6 +304,16 @@ export function registerApi(app: FastifyInstance) {
     // "Toda tu música" can be thousands of tracks: send a window around the current one.
     const from = Math.max(0, idx - 5);
     return { name: q.name, radio: !!q.stream_url, current: d.pos, total: list.length, played: idx, offset: from, items: list.slice(from, idx + 200) };
+  });
+  // Body: { pos, to? } — move the song at `pos` to where `to` is, or remove it when `to` is missing.
+  app.post('/api/devices/:id/queue/edit', async (req, reply) => {
+    const d = get<any>('SELECT * FROM devices WHERE id = ?', (req.params as any).id);
+    const b = (req.body ?? {}) as { pos?: unknown; to?: unknown };
+    if (!d?.queue_id || !Number.isInteger(b.pos) || (b.to !== undefined && !Number.isInteger(b.to))) return reply.code(400).send({ error: 'Petición no válida' });
+    if (!editQueue(d.queue_id, !!d.shuffle, d.pos, b.pos as number, b.to as number | undefined)) {
+      return reply.code(409).send({ error: 'Solo se pueden cambiar las canciones que aún no han sonado' });
+    }
+    return { ok: true };
   });
   app.delete('/api/devices/:id', async (req) => (run('DELETE FROM devices WHERE id = ?', (req.params as any).id), syncJellyfin(), { ok: true }));
   app.get('/api/jellyfin/status', async () => jellyfinStatus());

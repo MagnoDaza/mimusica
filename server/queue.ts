@@ -104,6 +104,29 @@ export function listQueue(queueId: string, shuffle: boolean) {
      JOIN tracks t ON t.id = qi.track_id WHERE qi.queue_id = ? ORDER BY ${order}`, queueId);
 }
 
+/**
+ * Console edits on what is still to come: move a song (`to` = target pos, in play order) or remove it (`to` undefined).
+ * Moving rotates track ids over the rows in between, so positions and shuffle order stay put
+ * and the tokens Alexa holds keep pointing at valid rows.
+ */
+export function editQueue(queueId: string, shuffle: boolean, currentPos: number, from: number, to?: number) {
+  const q = getQueue(queueId);
+  if (!q) return false;
+  const list = ordered(queueId, shuffle, !!q.audiobook);
+  const cur = list.findIndex((i) => i.pos === currentPos);
+  const a = list.findIndex((i) => i.pos === from);
+  const b = to === undefined ? a : list.findIndex((i) => i.pos === to);
+  if (a <= cur || b <= cur) return false; // only upcoming songs, never the one playing
+  tx(() => {
+    if (to === undefined) return void run('DELETE FROM queue_items WHERE queue_id = ? AND pos = ?', queueId, from);
+    const span = a < b ? list.slice(a, b + 1) : list.slice(b, a + 1);
+    const ids = span.map((i) => i.track_id);
+    const rotated = a < b ? [...ids.slice(1), ids[0]] : [ids[ids.length - 1], ...ids.slice(0, -1)];
+    span.forEach((row, i) => run('UPDATE queue_items SET track_id = ? WHERE queue_id = ? AND pos = ?', rotated[i], queueId, row.pos));
+  });
+  return true;
+}
+
 export type Step = 'first' | 'next' | 'previous' | 'current';
 
 /**
