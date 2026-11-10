@@ -420,6 +420,12 @@ export function resolve(input: Criteria, ctx: { deviceId?: string; utterance?: s
     return plan;
   };
   if (!resolved) return done(undefined);
+  // «Pon el álbum Grandes Exitos» with several artists owning one: play one album (the most played), not a mix.
+  if (resolved.album && !resolved.artist && !resolved.song && !resolved.book) {
+    const top = get<{ who: string }>(`SELECT album_artist AS who FROM tracks WHERE hidden = 0 AND audiobook = 0 AND album_n = ? AND album_artist != ''
+      GROUP BY album_artist_n ORDER BY SUM(play_count) DESC, COUNT(*) DESC LIMIT 1`, norm(resolved.album));
+    if (top) resolved = { ...resolved, artist: top.who };
+  }
 
   const audiobook = !!resolved.book;
   let ids = selectTracks(resolved, audiobook);

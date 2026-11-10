@@ -32,7 +32,7 @@ export function LibraryPage() {
   const tab = params.get('t') ?? 'albumes';
   const [q, setQ] = useState('');
   const dq = useDebounced(q);
-  const [detail, setDetail] = useState<{ type: 'album' | 'artist' | 'genre'; value: string } | null>(null);
+  const [detail, setDetail] = useState<{ type: 'album' | 'artist' | 'genre'; value: string; by?: string } | null>(null);
 
   return (
     <div className="page">
@@ -53,7 +53,7 @@ export function LibraryPage() {
       </div>
       {tab === 'canciones' && <TrackTable query={{ q: dq }} />}
       {tab === 'audiolibros' && <TrackTable query={{ q: dq, audiobook: '1' }} defaultSort="album" />}
-      {tab === 'albumes' && <GroupGrid type="albums" q={dq} onOpen={(v) => setDetail({ type: 'album', value: v })} />}
+      {tab === 'albumes' && <GroupGrid type="albums" q={dq} onOpen={(v, by) => setDetail({ type: 'album', value: v, by })} />}
       {tab === 'artistas' && <GroupGrid type="artists" q={dq} onOpen={(v) => setDetail({ type: 'artist', value: v })} />}
       {tab === 'generos' && <GroupGrid type="genres" q={dq} onOpen={(v) => setDetail({ type: 'genre', value: v })} />}
       {detail && <DetailDrawer {...detail} onClose={() => setDetail(null)} />}
@@ -63,15 +63,15 @@ export function LibraryPage() {
 
 // ---------------------------------------------------------------- grids
 
-function GroupGrid({ type, q, onOpen }: { type: 'albums' | 'artists' | 'genres'; q: string; onOpen: (v: string) => void }) {
+function GroupGrid({ type, q, onOpen }: { type: 'albums' | 'artists' | 'genres'; q: string; onOpen: (v: string, by?: string) => void }) {
   const [page, setPage] = useState(0);
   useEffect(() => setPage(0), [q, type]);
   const { data, loading } = useApi<Page<any>>(`/api/groups/${type}?q=${encodeURIComponent(q)}&page=${page}&size=60`);
   const player = usePlayer();
 
-  const playGroup = async (name: string) => {
+  const playGroup = async (name: string, by?: string) => {
     const key = type === 'albums' ? 'album' : type === 'artists' ? 'artist' : 'genre';
-    const r = await api<Page<Track>>(`/api/tracks?${key}=${encodeURIComponent(name)}&size=200&sort=${type === 'albums' ? 'track' : 'album'}`);
+    const r = await api<Page<Track>>(`/api/tracks?${key}=${encodeURIComponent(name)}${byParam(by)}&size=200&sort=${type === 'albums' ? 'track' : 'album'}`);
     player.play(r.rows);
   };
 
@@ -87,10 +87,10 @@ function GroupGrid({ type, q, onOpen }: { type: 'albums' | 'artists' | 'genres';
     <>
       <div className="tiles">
         {data.rows.map((g) => (
-          <button key={g.name} className="tile" onClick={() => onOpen(g.name)}>
+          <button key={`${g.name}|${g.album_artist ?? ''}`} className="tile" onClick={() => onOpen(g.name, g.album_artist || undefined)}>
             <div style={{ position: 'relative' }}>
               <Cover id={g.art_id} name={g.name} round={type === 'artists'} />
-              <PlayFab onClick={() => playGroup(g.name)} />
+              <PlayFab onClick={() => playGroup(g.name, g.album_artist || undefined)} />
             </div>
             <div style={{ minWidth: 0 }}>
               <div className="tile-title ellipsis">{g.name}</div>
@@ -108,15 +108,18 @@ function GroupGrid({ type, q, onOpen }: { type: 'albums' | 'artists' | 'genres';
   );
 }
 
-function DetailDrawer({ type, value, onClose }: { type: 'album' | 'artist' | 'genre'; value: string; onClose: () => void }) {
-  const { data } = useApi<Page<Track>>(`/api/tracks?${type}=${encodeURIComponent(value)}&size=500&sort=${type === 'album' ? 'track' : 'album'}`);
+const byParam = (by?: string) => (by ? `&album_artist=${encodeURIComponent(by)}` : '');
+const isVarious = (by?: string) => !by || /^(various|varios|va$)/i.test(by);
+
+function DetailDrawer({ type, value, by, onClose }: { type: 'album' | 'artist' | 'genre'; value: string; by?: string; onClose: () => void }) {
+  const { data } = useApi<Page<Track>>(`/api/tracks?${type}=${encodeURIComponent(value)}${type === 'album' ? byParam(by) : ''}&size=500&sort=${type === 'album' ? 'track' : 'album'}`);
   const player = usePlayer();
   const rows = data?.rows ?? [];
   const first = rows.find((r) => r.has_art);
   const total = rows.reduce((n, r) => n + r.duration, 0);
   const isBook = rows.length > 0 && rows.every((r) => r.audiobook);
   const phrase = useAlexaPhrase();
-  const say = phrase(type === 'album' ? (isBook ? `que lea ${value}` : `que ponga el álbum ${value}`)
+  const say = phrase(type === 'album' ? (isBook ? `que lea ${value}` : `que ponga el álbum ${value}${isVarious(by) ? '' : ` de ${by}`}`)
     : type === 'artist' ? `que ponga música de ${value}` : `que ponga música ${value}`);
 
   return (
@@ -128,14 +131,14 @@ function DetailDrawer({ type, value, onClose }: { type: 'album' | 'artist' | 'ge
           <div className="grow" style={{ minWidth: 0 }}>
             <div className="hero-kicker">{type === 'album' ? (isBook ? 'Audiolibro' : 'Álbum') : type === 'artist' ? 'Artista' : 'Género'}</div>
             <div className="hero-title" style={{ fontSize: 26 }}>{value}</div>
-            <div className="muted small">{rows.length} pistas · {fmtDuration(total)}</div>
+            <div className="muted small">{type === 'album' && by ? `${by} · ` : ''}{rows.length} pistas · {fmtDuration(total)}</div>
           </div>
           <button className="btn ghost icon sm" onClick={onClose} aria-label="Cerrar" style={{ alignSelf: 'flex-start' }}><X size={18} /></button>
         </div>
         <div className="row wrap" style={{ position: 'relative', marginTop: 18 }}>
           <button className="btn primary" onClick={() => player.play(rows)} disabled={!rows.length}><Play size={16} fill="currentColor" />Escuchar aquí</button>
           {type === 'album' && (
-            <button className="btn" onClick={() => act(() => api('/api/albums/audiobook', { body: { album: value, value: !isBook } }), isBook ? 'Ya no es audiolibro' : 'Marcado como audiolibro')}>
+            <button className="btn" onClick={() => act(() => api('/api/albums/audiobook', { body: { album: value, albumArtist: by, value: !isBook } }), isBook ? 'Ya no es audiolibro' : 'Marcado como audiolibro')}>
               <BookOpen size={16} />{isBook ? 'No es audiolibro' : 'Es un audiolibro'}
             </button>
           )}

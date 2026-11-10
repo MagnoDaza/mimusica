@@ -54,7 +54,7 @@ export function registerApi(app: FastifyInstance) {
 
   // ---------------------------------------------------------------- summary
   app.get('/api/summary', async () => {
-    const counts = get<any>(`SELECT COUNT(*) AS tracks, COUNT(DISTINCT NULLIF(album_n,'')) AS albums,
+    const counts = get<any>(`SELECT COUNT(*) AS tracks, COUNT(DISTINCT CASE WHEN album_n != '' THEN album_n || '|' || album_artist_n END) AS albums,
       COUNT(DISTINCT NULLIF(artist_n,'')) AS artists, SUM(duration) AS seconds, SUM(hidden) AS hidden,
       SUM(audiobook) AS audiobook, SUM(transcode != 'none') AS transcoded FROM tracks`);
     const genres = get<{ n: number }>('SELECT COUNT(DISTINCT genre_n) AS n FROM track_genres')!.n;
@@ -159,6 +159,7 @@ export function registerApi(app: FastifyInstance) {
       params.push(like, like, like, like, like, like, like, like);
     }
     if (q.album !== undefined) { where.push('album_n = (SELECT album_n FROM tracks WHERE album = ? LIMIT 1)'); params.push(q.album); }
+    if (q.album_artist) { where.push('album_artist_n = (SELECT album_artist_n FROM tracks WHERE album_artist = ? LIMIT 1)'); params.push(q.album_artist); }
     if (q.artist !== undefined) { where.push('(artist = ? OR album_artist = ?)'); params.push(q.artist, q.artist); }
     if (q.genre !== undefined) { where.push('id IN (SELECT track_id FROM track_genres WHERE genre = ?)'); params.push(q.genre); }
     if (q.hidden === '1') where.push('hidden = 1');
@@ -186,7 +187,7 @@ export function registerApi(app: FastifyInstance) {
       sql = `SELECT album AS name, MAX(album_artist) AS album_artist, MAX(artist) AS artist, MAX(year) AS year, COUNT(*) AS tracks,
         MAX(audiobook) AS audiobook, SUM(hidden) AS hidden, MIN(CASE WHEN has_art THEN id END) AS art_id, MIN(id) AS first_id
         FROM tracks WHERE album != '' AND (lower(album) LIKE ? OR album_n LIKE ? OR lower(album_artist) LIKE ? OR lower(artist) LIKE ?)
-        GROUP BY album_n ORDER BY album_n`;
+        GROUP BY album_n, album_artist_n ORDER BY album_n, album_artist_n`;
     } else if (type === 'artists') {
       sql = `SELECT artist AS name, COUNT(*) AS tracks, COUNT(DISTINCT album_n) AS albums, MIN(CASE WHEN has_art THEN id END) AS art_id
         FROM tracks WHERE artist != '' AND (lower(artist) LIKE ? OR artist_n LIKE ? OR ? = ? )
@@ -218,8 +219,10 @@ export function registerApi(app: FastifyInstance) {
     return { ok: true };
   });
   app.post('/api/albums/audiobook', async (req) => {
-    const { album, value } = (req.body ?? {}) as { album: string; value: boolean };
-    run('UPDATE tracks SET audiobook = ? WHERE album_n = (SELECT album_n FROM tracks WHERE album = ? LIMIT 1)', value ? 1 : 0, album);
+    const { album, albumArtist, value } = (req.body ?? {}) as { album: string; albumArtist?: string; value: boolean };
+    run(`UPDATE tracks SET audiobook = ? WHERE album_n = (SELECT album_n FROM tracks WHERE album = ? LIMIT 1)
+      ${albumArtist ? 'AND album_artist_n = (SELECT album_artist_n FROM tracks WHERE album_artist = ? LIMIT 1)' : ''}`,
+      value ? 1 : 0, album, ...(albumArtist ? [albumArtist] : []));
     return { ok: true };
   });
   /** "Selección actual": a queue Alexa plays with "pon la selección". */

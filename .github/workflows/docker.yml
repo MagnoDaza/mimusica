@@ -44,6 +44,8 @@ jobs:
           grep -q 'Poniendo el álbum .* de Queen' out.txt
           grep -q 'Poniendo música parecida a' out.txt
           grep -q 'Poniendo lo que más escuchas' out.txt
+          grep -q 'Poniendo el álbum Grandes Éxitos de ' out.txt
+          test "$(curl -s 'localhost:18080/api/groups/albums?q=grandes' | grep -o '"name":"Grandes' | wc -l)" = 2
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:18081/api/summary)" = 404
 
   image:

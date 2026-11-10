@@ -40,6 +40,9 @@ const lib: T[] = [
   { artist: 'Shakira', album: 'Pies Descalzos', title: 'Estoy Aquí', genre: 'Pop Latino', track: 2, year: 1995 },
   { artist: 'Shakira', album: 'Pies Descalzos', title: 'Antología', genre: 'Pop Latino', track: 1, year: 1995 },
   { artist: 'Juan Luis Guerra', album: 'Bachata Rosa', title: 'Burbujas de Amor', genre: 'Bachata;Merengue', track: 3, year: 1990 },
+  // Same album name, two artists: must stay two albums.
+  { artist: 'Maná', album: 'Grandes Éxitos', title: 'Rayando el Sol', genre: 'Rock en Español', track: 1 },
+  { artist: 'Diomedes Díaz', album: 'Grandes Éxitos', title: 'Tres Canciones', genre: 'Vallenato', track: 1 },
 ];
 const book = Array.from({ length: 3 }, (_, i) => ({
   artist: 'Antoine de Saint-Exupéry', album: 'El Principito', title: `Capítulo ${i + 1}`, genre: 'Audiolibro', track: i + 1,
