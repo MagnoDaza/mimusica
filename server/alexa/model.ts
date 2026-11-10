@@ -152,8 +152,11 @@ export function buildInteractionModel() {
     { name: 'WhatsPlayingIntent', slots: [],
       samples: ['qué suena', 'qué está sonando', 'qué canción es esta', 'qué canción es', 'quién canta esto', 'qué es esto', 'cómo se llama esta canción'] },
     { name: 'AddToPlaylistIntent', slots: [{ name: 'playlist', type: 'MUSIC_PLAYLIST' }],
-      samples: ['añade esta canción a {playlist}', 'añade esta canción a mi lista {playlist}', 'agrega esta canción a {playlist}',
-        'agrega esta canción a mi lista {playlist}', 'guarda esta canción en {playlist}', 'añádela a {playlist}', 'agrégala a {playlist}'] },
+      // «pide a … que guarde esta canción en X» is how people say it; without a list name it goes to Favoritas.
+      samples: [...expandWith(['ADD THIS a {playlist}', 'ADD THIS a mi lista {playlist}', 'ADD THIS en {playlist}', 'ADD THIS en mi lista {playlist}', 'ADD THIS a favoritas', 'ADD THIS a mis favoritas', 'ADD THIS a favoritos'], {
+        ADD: ['añade', 'agrega', 'guarda', 'mete', 'que añada', 'que agregue', 'que guarde', 'que meta'], THIS: ['esta canción', 'este tema', 'la canción'],
+      }), 'añádela a {playlist}', 'agrégala a {playlist}', 'guárdala en {playlist}', 'añádela a favoritas', 'guárdala en favoritas',
+        'me encanta esta canción', 'marca esta canción como favorita', 'que marque esta canción como favorita'] },
     { name: 'IgnoreTrackIntent', slots: [],
       samples: ['no vuelvas a poner esta canción', 'no me pongas más esta canción', 'quita esta canción', 'no me gusta esta canción', 'oculta esta canción'] },
     ...['CancelIntent', 'HelpIntent', 'StopIntent', 'PauseIntent', 'ResumeIntent', 'NextIntent', 'PreviousIntent', 'StartOverIntent',

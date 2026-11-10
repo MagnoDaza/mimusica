@@ -363,12 +363,14 @@ function handleIntent(deviceId: string, req: any, ctx: any): Res {
     }
     case 'AddToPlaylistIntent': {
       const cur = currentTrack(deviceId, token);
-      const wanted = slot(intent, 'playlist');
+      const said = slot(intent, 'playlist');
       if (!cur) return respond({ speech: t('nothingPlaying'), end: true });
-      if (!wanted) return respond({ speech: t('whichPlaylist'), reprompt: t('whichPlaylist'), end: false });
+      // No list named, or any form of "favoritos" → one list called Favoritas.
+      const wanted = !said || /^(mis? )?favorit[oa]s?$/i.test(said.trim()) ? 'Favoritas' : said;
       const { id, name: plName, created } = findOrCreateUserPlaylist(wanted);
       const pos = get<{ n: number }>('SELECT COALESCE(MAX(position) + 1, 0) AS n FROM playlist_tracks WHERE playlist_id = ?', id)!.n;
       run('INSERT INTO playlist_tracks (playlist_id, position, track_id) VALUES (?, ?, ?)', id, pos, cur.track.id);
+      addMessage('library', 'info', `${cur.track.title} añadida por voz a ${plName}`, created ? 'Lista nueva, la ves en Listas.' : '');
       return respond({ speech: t(created ? 'addedNewPlaylist' : 'addedToPlaylist', cur.track.title, plName), end: true });
     }
     case 'IgnoreTrackIntent': {

@@ -57,6 +57,7 @@ await audio('PlaybackStarted');
 offset = 0;
 await intent('AMAZON.ShuffleOnIntent');
 await intent('AddToPlaylistIntent', { playlist: 'para correr' });
+await intent('AddToPlaylistIntent');
 await intent('IgnoreTrackIntent');
 await send({ type: 'PlaybackController.NextCommandIssued' });
 await intent('PlayIntent', { query: 'metallica' });

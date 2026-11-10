@@ -35,7 +35,6 @@ const es: Record<string, string | ((...a: string[]) => string)> = {
   noSelection: 'No hay ninguna selección. Créala desde la consola web.',
   nowPlaying: (title, artist, album) =>
     `Suena ${title}${artist ? `, de ${artist}` : ''}${album ? `, del álbum ${album}` : ''}.`,
-  whichPlaylist: '¿A qué lista la añado?',
   addedToPlaylist: (title, list) => `Añadí ${title} a tu lista ${list}.`,
   addedNewPlaylist: (title, list) => `Creé la lista ${list} y añadí ${title}.`,
   whatToQueue: '¿Qué canción añado a la cola?',

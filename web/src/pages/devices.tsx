@@ -197,8 +197,8 @@ function Phrases() {
   const groups: [string, string[]][] = [
     ['Para empezar', [`pide a ${inv} que ponga el álbum Back in Black`, `pide a ${inv} que ponga canciones de Shakira`, `pide a ${inv} que ponga salsa`, `pide a ${inv} que continúe donde lo dejé`]],
     ['Al azar', [`pide a ${inv} que ponga un disco al azar`, `pide a ${inv} que ponga algo parecido a esto`, `pide a ${inv} que ponga lo más escuchado`, `pide a ${inv} que ponga otra canción`]],
-    ['Mientras suena', [`pide a ${inv} que añada Thunderstruck a la cola`, `pide a ${inv} que ponga Hells Bells a continuación`, `pide a ${inv} qué viene después`, `pide a ${inv} que guarde esta canción en Favoritas`]],
-    ['Sin decir el nombre', ['siguiente', 'anterior', 'pausa', 'continúa', 'aleatorio', 'repite']],
+    ['Mientras suena', [`pide a ${inv} que añada Thunderstruck a la cola`, `pide a ${inv} que ponga Hells Bells a continuación`, `pide a ${inv} qué viene después`, `pide a ${inv} que guarde esta canción en favoritas`]],
+    ['Sin decir el nombre (esto lo hace Alexa; «añade a favoritos» sin el nombre va a Amazon Music)', ['siguiente', 'anterior', 'pausa', 'continúa', 'aleatorio', 'repite']],
   ];
   return (
     <details className="card" style={{ marginTop: 16, padding: '14px 18px' }}>
