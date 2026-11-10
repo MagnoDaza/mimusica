@@ -41,6 +41,7 @@ jobs:
           grep -q 'Continuando El Principito' out.txt
           grep -q 'después de esta suena Hells Bells' out.txt
           grep -q 'al final de la cola' out.txt
+          grep -q 'Poniendo el álbum .* de Queen' out.txt
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:18081/api/summary)" = 404
 
   image:

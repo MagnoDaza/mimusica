@@ -283,9 +283,25 @@ function searchHash(r: Resolved) {
   return sha256(['song', 'album', 'artist', 'genre', 'book'].map((k) => (r as any)[k]?.toLowerCase() ?? '').join(','));
 }
 
-function everything(): PlayPlan {
+export function everything(): PlayPlan {
   const ids = all<{ id: string }>('SELECT id FROM tracks WHERE hidden = 0 AND audiobook = 0 ORDER BY RANDOM() LIMIT ?', EVERYTHING_SIZE).map((x) => x.id);
   const queue = createQueue('toda tu música', ids);
+  return { queue, trackCount: ids.length };
+}
+
+/** «Pon un álbum al azar (de X)»: one whole album, in order. */
+export function randomAlbum(artist?: string, ctx: { deviceId?: string; utterance?: string } = {}): PlayPlan | undefined {
+  // An artist narrows the pick to the tracks the normal artist search finds.
+  const scope = artist ? resolve({ artist }, ctx) : undefined;
+  if (artist && !scope) return undefined;
+  const a = get<{ album_n: string; album_artist_n: string; album: string; who: string }>(
+    `SELECT album_n, album_artist_n, album, COALESCE(NULLIF(album_artist, ''), artist) AS who FROM tracks
+     WHERE hidden = 0 AND audiobook = 0 AND album_n != '' ${scope ? 'AND id IN (SELECT track_id FROM queue_items WHERE queue_id = ?)' : ''}
+     GROUP BY album_n, album_artist_n ORDER BY RANDOM() LIMIT 1`, ...(scope ? [scope.queue.id] : []));
+  if (!a) return undefined;
+  const ids = all<{ id: string }>('SELECT id FROM tracks WHERE hidden = 0 AND album_n = ? AND album_artist_n = ? ORDER BY disc, track_no, title',
+    a.album_n, a.album_artist_n).map((x) => x.id);
+  const queue = createQueue(a.who ? `el álbum ${a.album} de ${a.who}` : `el álbum ${a.album}`, ids);
   return { queue, trackCount: ids.length };
 }
 

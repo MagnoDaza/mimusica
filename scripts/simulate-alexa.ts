@@ -74,3 +74,7 @@ await intent('ResumeLastIntent');
 await intent('PlayPlaylistIntent', { playlist: 'favoritas' });
 await intent('PlayEverythingIntent');
 await intent('AMAZON.HelpIntent');
+console.log('--- al azar');
+await intent('RandomAlbumIntent', { artist: 'queen' });
+await intent('RandomAlbumIntent');
+await intent('RandomSongIntent');
