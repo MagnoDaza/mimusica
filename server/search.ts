@@ -305,6 +305,27 @@ export function randomAlbum(artist?: string, ctx: { deviceId?: string; utterance
   return { queue, trackCount: ids.length };
 }
 
+/** «Pon algo parecido a esto»: same artist or a shared genre, shuffled. */
+export function similarTo(track: { id: string; title: string; artist_n?: string; album_artist_n?: string }): PlayPlan | undefined {
+  const ids = all<{ id: string }>(`SELECT id FROM tracks WHERE hidden = 0 AND audiobook = 0 AND id != ? AND (
+      (artist_n != '' AND artist_n = ?) OR (album_artist_n != '' AND album_artist_n = ?)
+      OR id IN (SELECT track_id FROM track_genres WHERE genre_n IN (SELECT genre_n FROM track_genres WHERE track_id = ?)))
+    ORDER BY RANDOM() LIMIT ?`, track.id, track.artist_n ?? '', track.album_artist_n ?? '', track.id, EVERYTHING_SIZE).map((x) => x.id);
+  if (!ids.length) return undefined;
+  return { queue: createQueue(`música parecida a ${track.title}`, ids), trackCount: ids.length };
+}
+
+/** «Pon lo más escuchado (de X)»: your top 100 by play count, shuffled. */
+export function mostPlayed(artist?: string, ctx: { deviceId?: string; utterance?: string } = {}): PlayPlan | undefined {
+  const scope = artist ? resolve({ artist }, ctx) : undefined;
+  if (artist && !scope) return undefined;
+  const ids = all<{ id: string }>(`SELECT id FROM tracks WHERE hidden = 0 AND audiobook = 0 AND play_count > 0
+      ${scope ? 'AND id IN (SELECT track_id FROM queue_items WHERE queue_id = ?)' : ''}
+      ORDER BY play_count DESC, last_played DESC LIMIT 100`, ...(scope ? [scope.queue.id] : [])).map((x) => x.id);
+  if (!ids.length) return undefined;
+  return { queue: createQueue(artist ? `lo que más escuchas de ${artist}` : 'lo que más escuchas', shuffled(ids)), trackCount: ids.length };
+}
+
 // ---------------------------------------------------------------- playlists & folder labels
 
 export function findPlaylist(search: string, shuffle: boolean, ctx: { deviceId?: string; utterance?: string } = {}): PlayPlan | undefined {

@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { all, get, run } from '../db.ts';
 import { settings, sign } from '../settings.ts';
-import { resolve, findPlaylist, everything, randomAlbum, type Criteria, type PlayPlan } from '../search.ts';
+import { resolve, findPlaylist, everything, randomAlbum, similarTo, mostPlayed, type Criteria, type PlayPlan } from '../search.ts';
 import {
   navigate, itemAt, getQueue, createQueue, saveBookmark, getBookmark, findPosForTrack, insertTracks, LAST_BOOKMARK,
   type Track, type Step,
@@ -298,6 +298,17 @@ function handleIntent(deviceId: string, req: any, ctx: any): Res {
     case 'RandomSongIntent': {
       const plan = everything();
       return plan.trackCount ? startPlan(deviceId, plan) : respond({ speech: t('emptyLibrary'), end: true });
+    }
+    case 'SimilarIntent': {
+      const cur = currentTrack(deviceId, token);
+      if (!cur) return respond({ speech: t('nothingPlaying'), end: true });
+      const plan = similarTo(cur.track);
+      return plan ? startPlan(deviceId, plan) : respond({ speech: t('noSimilar', cur.track.title), end: true });
+    }
+    case 'MostPlayedIntent': {
+      const artist = slot(intent, 'artist');
+      const plan = mostPlayed(artist, { deviceId, utterance: `${name}: ${artist ?? ''}` });
+      return plan ? startPlan(deviceId, plan) : respond({ speech: artist ? t('noPlaysOf', artist) : t('noPlays'), end: true });
     }
     case 'ResumeLastIntent':
       return resumeLast(deviceId);

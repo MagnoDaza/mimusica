@@ -42,6 +42,8 @@ jobs:
           grep -q 'después de esta suena Hells Bells' out.txt
           grep -q 'al final de la cola' out.txt
           grep -q 'Poniendo el álbum .* de Queen' out.txt
+          grep -q 'Poniendo música parecida a' out.txt
+          grep -q 'Poniendo lo que más escuchas' out.txt
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:18081/api/summary)" = 404
 
   image:

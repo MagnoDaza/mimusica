@@ -28,6 +28,9 @@ const es: Record<string, string | ((...a: string[]) => string)> = {
   nothingPlaying: 'Ahora no está sonando nada de tu biblioteca.',
   atEnd: 'Es la última pista de la lista.',
   atStart: 'Es la primera pista de la lista.',
+  noSimilar: (title) => `No encontré nada parecido a ${title}.`,
+  noPlays: 'Todavía no has escuchado nada desde Mi Música. Pide algo y lo iré aprendiendo.',
+  noPlaysOf: (artist) => `Todavía no has escuchado nada de ${artist} desde Mi Música.`,
   emptyLibrary: 'Tu biblioteca está vacía. Añade una carpeta desde la consola web.',
   noSelection: 'No hay ninguna selección. Créala desde la consola web.',
   nowPlaying: (title, artist, album) =>
@@ -46,7 +49,7 @@ const es: Record<string, string | ((...a: string[]) => string)> = {
   LoopOff: 'Repetición desactivada.',
   help: (inv) =>
     `Puedes decir: pide a ${inv} que ponga música de un artista, el álbum que quieras, una canción, un género o tu lista favorita. ` +
-    'También: añade una canción a la cola, pon una canción a continuación, qué suena, qué viene después, siguiente, anterior, aleatorio, o continúa donde lo dejé. ¿Qué te pongo?',
+    'También: añade una canción a la cola, pon una canción a continuación, qué suena, qué viene después, un disco al azar, algo parecido a esto, lo más escuchado, siguiente, anterior, aleatorio, o continúa donde lo dejé. ¿Qué te pongo?',
   fallback: 'No sé hacer eso todavía. Prueba con: pon música de, seguido del artista.',
   noPublicUrl: 'Falta configurar la dirección pública del servidor en la consola web.',
   internalError: 'Algo falló en el servidor de música. Revisa los mensajes en la consola web.',

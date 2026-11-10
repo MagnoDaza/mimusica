@@ -134,6 +134,18 @@ export function buildInteractionModel() {
           'canciones al azar', 'canciones aleatorias', 'música aleatoria', 'música al azar', 'algo al azar', 'algo aleatorio',
           'algo diferente', 'algo distinto', 'otra cosa'],
       }), 'sorpréndeme', 'sorpréndeme con algo', 'sorpréndeme con una canción', 'elige tú', 'elige una canción', 'lo que tú quieras'] },
+    { name: 'SimilarIntent', slots: [],
+      samples: [...expandWith(['VERB LIKE'], {
+        VERB: [...verbs, 'que ponga', 'que me ponga'],
+        LIKE: ['algo parecido', 'algo parecido a esto', 'algo parecido a esta canción', 'algo similar', 'algo similar a esto',
+          'algo así', 'más como esto', 'más canciones así', 'música parecida', 'música similar', 'canciones parecidas', 'algo del mismo estilo'],
+      }), 'más de este estilo', 'más como esta', 'sigue con algo parecido', 'algo en la misma onda'] },
+    { name: 'MostPlayedIntent', slots: [{ name: 'artist', type: 'MUSIC_ARTIST' }],
+      samples: expandWith(['VERB TOP', 'VERB TOP de {artist}'], {
+        VERB: [...verbs, 'que ponga', 'que me ponga'],
+        TOP: ['lo más escuchado', 'lo que más escucho', 'lo que más he escuchado',
+          'mis más escuchadas', 'las más escuchadas', 'lo más sonado', 'mis éxitos', 'lo de siempre'],
+      }) },
     { name: 'PlaySelectionIntent', slots: [], samples: ['pon la selección', 'pon mi selección', 'reproduce la selección actual'] },
     { name: 'ResumeLastIntent', slots: [],
       samples: ['continúa donde lo dejé', 'sigue donde lo dejé', 'sigue con lo último', 'pon lo último', 'continúa lo último', 'retoma la música'] },
