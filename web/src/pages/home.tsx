@@ -1,4 +1,4 @@
-import { Check, Circle, Speaker, Music2, ArrowRight, AlertTriangle, Info, XCircle } from 'lucide-react';
+import { Check, Circle, Speaker, Music2, ArrowRight, AlertTriangle, Info, XCircle, ListMusic } from 'lucide-react';
 import { useApi, nf, fmtHours, fmtAgo } from '../lib.ts';
 import { Cover, Eq, PlayFab, Skeleton } from '../ui.tsx';
 import { usePlayer } from '../player.tsx';
@@ -44,6 +44,7 @@ export function HomePage() {
             <div className="hero-title ellipsis">{hero.title}</div>
             <div className="hero-sub ellipsis">{[hero.artist, hero.album].filter(Boolean).join(' · ')}</div>
             {hero.queue_name && <div className="faint small" style={{ marginTop: 10 }}>De «{hero.queue_name}»</div>}
+            {hero.queue_id && <a className="btn sm" style={{ marginTop: 12 }} href={`#/dispositivos?cola=${encodeURIComponent(hero.id)}`}><ListMusic size={15} />Ver la cola</a>}
           </div>
           {playing.length > 1 && <span className="badge accent">+{playing.length - 1} altavoces</span>}
         </div>

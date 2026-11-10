@@ -11,7 +11,7 @@ import { listMessages, clearMessage, clearAllMessages } from '../messages.ts';
 import { requestScan, requestScanAll, rescanTracks, folderLogPath, isScanning, watchFolders } from '../scanner.ts';
 import { explain, type Criteria } from '../search.ts';
 import { createQueue, listBookmarks, clearBookmark, listQueue, editQueue } from '../queue.ts';
-import { syncJellyfin, jellyfinStatus } from '../jellyfin.ts';
+import { syncJellyfin, jellyfinStatus, deliver } from '../jellyfin.ts';
 import { buildInteractionModel } from '../alexa/model.ts';
 import { ffmpegAvailable, clearArtCache, clearTranscodeCache } from '../media.ts';
 import { m3uExport } from '../playlistfiles.ts';
@@ -75,7 +75,9 @@ export function registerApi(app: FastifyInstance) {
       skillConfigured: !!s.skillId,
       lastAlexaRequest: lastAlexa,
       started, version: '1.0.0', os: `${os.type()} ${os.release()}`, node: process.version,
-      devices, recent,
+      // Each Echo's last requests ("PlayAlbumIntent: back in black").
+      devices: devices.map((d: any) => ({ ...d, requests: all<any>('SELECT ts, utterance, success FROM history WHERE device_id = ? ORDER BY id DESC LIMIT 3', d.id) })),
+      recent,
       setup: {
         folders: get<{ n: number }>('SELECT COUNT(*) AS n FROM folders')!.n > 0,
         publicUrl: !!s.publicUrl,
@@ -314,6 +316,14 @@ export function registerApi(app: FastifyInstance) {
       return reply.code(409).send({ error: 'Solo se pueden cambiar las canciones que aún no han sonado' });
     }
     return { ok: true };
+  });
+  // From the console: same rules as Jellyfin's «Reproducir en» (after the next song, at the end, or «la selección»).
+  app.post('/api/devices/:id/queue/add', async (req, reply) => {
+    const b = (req.body ?? {}) as { trackIds?: unknown; at?: unknown };
+    const ids = Array.isArray(b.trackIds) ? b.trackIds.filter((x): x is string => typeof x === 'string').slice(0, 200) : [];
+    const said = ids.length ? deliver((req.params as any).id, ids, b.at === 'end' ? 'PlayLast' : 'PlayNext') : '';
+    if (!said) return reply.code(400).send({ error: 'No se pudo añadir' });
+    return { ok: true, message: said };
   });
   app.delete('/api/devices/:id', async (req) => (run('DELETE FROM devices WHERE id = ?', (req.params as any).id), syncJellyfin(), { ok: true }));
   app.get('/api/jellyfin/status', async () => jellyfinStatus());
