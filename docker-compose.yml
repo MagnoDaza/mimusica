@@ -1,8 +1,8 @@
 # Mi Música — tu biblioteca del NAS en Alexa.
 # Copia .env.example a .env, rellénalo y: docker compose up -d
 services:
-  # Tailscale publica SOLO el puerto de Alexa (8081 de "mimusica") en Internet con HTTPS (Funnel).
-  # La consola no pasa por aquí: tiene su propio puerto en "mimusica", así que se ve aunque Tailscale falle.
+  # Tailscale publica SOLO el puerto de Alexa (8081) en Internet con HTTPS (Funnel).
+  # "mimusica" usa la red de este contenedor: por eso el puerto de la consola se publica aquí.
   tailscale:
     image: tailscale/tailscale:stable
     container_name: mimusica-tailscale
@@ -20,14 +20,17 @@ services:
       - /dev/net/tun:/dev/net/tun
     cap_add:
       - net_admin
+    ports:
+      - "${CONSOLE_PORT:-8090}:8080"   # consola web en la red local: http://IP-DEL-NAS:8090
     restart: unless-stopped
 
   mimusica:
     # Imagen publicada por GitHub Actions en cada cambio de la rama main.
     image: ghcr.io/magnodaza/mimusica:latest
     container_name: mimusica
-    ports:
-      - "${CONSOLE_PORT:-8090}:8080"   # consola web en la red local: http://IP-DEL-NAS:8090
+    network_mode: service:tailscale   # Tailscale llega a la app en 127.0.0.1:8081 (ver tailscale/serve.json)
+    depends_on:
+      - tailscale
     environment:
       - PUBLIC_URL=https://mimusica.${TS_TAILNET}.ts.net
       - ALEXA_SKILL_ID=${ALEXA_SKILL_ID:-}
