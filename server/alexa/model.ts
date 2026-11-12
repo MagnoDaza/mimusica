@@ -146,11 +146,20 @@ export function buildInteractionModel() {
         TOP: ['lo más escuchado', 'lo que más escucho', 'lo que más he escuchado',
           'mis más escuchadas', 'las más escuchadas', 'lo más sonado', 'mis éxitos', 'lo de siempre'],
       }) },
+    // Modo buscar: Alexa asks for the artist, then the song (Dialog.ElicitSlot from skill.ts).
+    { name: 'SearchSongIntent',
+      slots: [
+        { name: 'artist', type: 'MUSIC_ARTIST', samples: ['{artist}', 'de {artist}', 'el artista {artist}', 'del artista {artist}'] },
+        { name: 'song', type: 'MUSIC_SONG', samples: ['{song}', 'la canción {song}', 'el tema {song}'] },
+      ],
+      samples: ['busca una canción', 'buscar una canción', 'quiero buscar una canción', 'que busque una canción', 'modo buscar',
+        'modo búsqueda', 'busca una canción de {artist}', 'que busque una canción de {artist}'] },
     { name: 'PlaySelectionIntent', slots: [], samples: ['pon la selección', 'pon mi selección', 'reproduce la selección actual'] },
     { name: 'ResumeLastIntent', slots: [],
       samples: ['continúa donde lo dejé', 'sigue donde lo dejé', 'sigue con lo último', 'pon lo último', 'continúa lo último', 'retoma la música'] },
     { name: 'WhatsPlayingIntent', slots: [],
-      samples: ['qué suena', 'qué está sonando', 'qué canción es esta', 'qué canción es', 'quién canta esto', 'qué es esto', 'cómo se llama esta canción'] },
+      samples: ['qué suena', 'qué está sonando', 'qué canción es esta', 'qué canción es', 'quién canta esto', 'qué es esto', 'cómo se llama esta canción',
+        'nombre', 'el nombre', 'dime el nombre', 'dime el nombre de la canción', 'nombre de la canción', 'cómo se llama'] },
     { name: 'AddToPlaylistIntent', slots: [{ name: 'playlist', type: 'MUSIC_PLAYLIST' }],
       // «pide a … que guarde esta canción en X» is how people say it; without a list name it goes to Favoritas.
       samples: [...expandWith(['ADD THIS a {playlist}', 'ADD THIS a mi lista {playlist}', 'ADD THIS en {playlist}', 'ADD THIS en mi lista {playlist}', 'ADD THIS a favoritas', 'ADD THIS a mis favoritas', 'ADD THIS a favoritos'], {
@@ -171,6 +180,21 @@ export function buildInteractionModel() {
         intents,
         types,
       },
+      // Dialog directives only work for intents listed here; SKILL_RESPONSE means skill.ts drives the questions.
+      dialog: {
+        delegationStrategy: 'SKILL_RESPONSE',
+        intents: [{
+          name: 'SearchSongIntent', confirmationRequired: false, prompts: {},
+          slots: ['artist', 'song'].map((s) => ({
+            name: s, type: s === 'artist' ? 'MUSIC_ARTIST' : 'MUSIC_SONG', confirmationRequired: false,
+            elicitationRequired: true, prompts: { elicitation: `Elicit.SearchSong.${s}` },
+          })),
+        }],
+      },
+      prompts: [
+        { id: 'Elicit.SearchSong.artist', variations: [{ type: 'PlainText', value: '¿De qué artista?' }] },
+        { id: 'Elicit.SearchSong.song', variations: [{ type: 'PlainText', value: '¿Qué canción?' }] },
+      ],
     },
   };
 }

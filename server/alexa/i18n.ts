@@ -20,6 +20,8 @@ const es: Record<string, string | ((...a: string[]) => string)> = {
   albumsOf: (count, artist, list, example) =>
     `Tienes ${count === '1' ? 'un álbum' : `${count} álbumes`} de ${artist}: ${list}. ¿Cuál te pongo? Di, por ejemplo: el álbum ${example}.`,
   whichAlbum: '¿Qué álbum te pongo?',
+  whichArtist: 'Vale, busquemos. ¿De qué artista?',
+  whichSong: (artist) => `¿Qué canción de ${artist}?`,
   noAlbums: (artist) => `No tengo álbumes de ${artist} en tu biblioteca.`,
   notFound: (what) => `No encontré ${what} en tu biblioteca.`,
   didntCatch: 'No te entendí bien. ¿Qué quieres escuchar?',
@@ -48,7 +50,7 @@ const es: Record<string, string | ((...a: string[]) => string)> = {
   LoopOff: 'Repetición desactivada.',
   help: (inv) =>
     `Puedes decir: pide a ${inv} que ponga música de un artista, el álbum que quieras, una canción, un género o tu lista favorita. ` +
-    'También: añade una canción a la cola, pon una canción a continuación, qué suena, qué viene después, un disco al azar, algo parecido a esto, lo más escuchado, siguiente, anterior, aleatorio, o continúa donde lo dejé. ¿Qué te pongo?',
+    'También: busca una canción, añade una canción a la cola, pon una canción a continuación, qué suena, qué viene después, un disco al azar, algo parecido a esto, lo más escuchado, siguiente, anterior, aleatorio, o continúa donde lo dejé. ¿Qué te pongo?',
   fallback: 'No sé hacer eso todavía. Prueba con: pon música de, seguido del artista.',
   noPublicUrl: 'Falta configurar la dirección pública del servidor en la consola web.',
   internalError: 'Algo falló en el servidor de música. Revisa los mensajes en la consola web.',

@@ -133,7 +133,7 @@ export function AlexaPage() {
             {[
               'pon música de Shakira', 'pon el álbum Canción Animal', 'pon la canción Hotel California de Eagles', 'pon música jazz',
               'pon mi lista Favoritas', 'lee el libro El Principito', 'continúa donde lo dejé', 'qué suena',
-              'añade esta canción a mi lista Gimnasio', 'no vuelvas a poner esta canción', 'pon la selección',
+              'añade esta canción a mi lista Gimnasio', 'no vuelvas a poner esta canción', 'pon la selección', 'busca una canción (te pregunta artista y canción)',
             ].map((u) => (
               <div key={u} className="row small"><Mic size={14} color="var(--accent)" /><span>«…{u}»</span></div>
             ))}

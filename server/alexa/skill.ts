@@ -384,6 +384,15 @@ function handleIntent(deviceId: string, req: any, ctx: any): Res {
       updateDevice(deviceId, { queue_id: cur.queueId, pos: next.item.pos, offset_ms: 0 });
       return respond({ speech: t('ignored'), directives: [playDirective(next.track, tokenFor(cur.queueId, next.item.pos), 0, 'REPLACE_ALL')], end: true });
     }
+    case 'SearchSongIntent': {
+      const artist = slot(intent, 'artist'), song = slot(intent, 'song');
+      const ask = (slotToElicit: string, speech: string) =>
+        respond({ speech, reprompt: speech, directives: [{ type: 'Dialog.ElicitSlot', slotToElicit, updatedIntent: intent }], end: false });
+      if (!artist) return ask('artist', t('whichArtist'));
+      if (!song) return ask('song', t('whichSong', artist));
+      const plan = resolve({ song, artist }, { deviceId, utterance: `${name}: ${song}, ${artist}` });
+      return plan ? startPlan(deviceId, plan) : respond({ speech: t('notFound', `${song} de ${artist}`), end: true });
+    }
     case 'ListAlbumsIntent': {
       const artist = slot(intent, 'artist');
       if (!artist) return respond({ speech: t('didntCatch'), reprompt: t('reprompt'), end: false });
